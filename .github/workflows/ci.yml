@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      # `verify` runs unit tests (surefire) and the Testcontainers
+      # integration tests (failsafe); the runner provides Docker.
+      - name: Build and test
+        working-directory: backend
+        run: mvn -B verify
+
+  worker:
+    name: Worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Build and test
+        working-directory: worker
+        run: mvn -B verify
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci || npm install
+      # Build first so Next generates next-env.d.ts before the explicit type-check.
+      - name: Build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:8080/api
+          NEXT_PUBLIC_APP_BASE_URL: http://localhost:3000
+          # Placeholder for CI build only. Use a real test key via repo secrets
+          # if Clerk prerendering requires it.
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2ktcGxhY2Vob2xkZXItZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk
+        run: npm run build
+      - name: Type-check
+        working-directory: frontend
+        run: npm run typecheck

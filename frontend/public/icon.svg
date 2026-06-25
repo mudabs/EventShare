@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EventShare">
+  <rect width="512" height="512" rx="96" fill="#4f46e5"/>
+  <circle cx="256" cy="200" r="64" fill="none" stroke="#ffffff" stroke-width="28"/>
+  <rect x="120" y="150" width="272" height="220" rx="28" fill="none" stroke="#ffffff" stroke-width="28"/>
+  <circle cx="360" cy="150" r="16" fill="#ffffff"/>
+</svg>

@@ -1,0 +1,55 @@
+# Build output
+target/
+build/
+dist/
+.next/
+out/
+node_modules/
+coverage/
+*.lcov
+
+# Expo / React Native
+mobile/.expo/
+mobile/.expo-shared/
+mobile/android/
+mobile/ios/
+mobile/web-build/
+
+# Env / secrets
+.env
+.env.local
+*.env
+*.local
+backend/src/main/resources/application-local.yml
+mobile/.env
+mobile/.env.local
+
+# IDE - IntelliJ / IDEA
+.idea/
+*.iml
+
+# IDE - Eclipse / Spring Tools
+.classpath
+.factorypath
+.project
+.settings/
+
+# IDE - VS Code
+.vscode/
+
+# macOS / Windows
+.DS_Store
+**/.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Docker / data volumes (if bind-mounted)
+data/
+
+# Agent / tooling artifacts
+.agents/
+.github/modernize/

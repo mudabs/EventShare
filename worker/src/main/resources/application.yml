@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: eventshare-worker
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/eventshare}
+    username: ${SPRING_DATASOURCE_USERNAME:eventshare}
+    password: ${SPRING_DATASOURCE_PASSWORD:eventshare}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # The API service owns the schema (Flyway); the worker only validates.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  # Migrations are applied exclusively by the API service.
+  flyway:
+    enabled: false
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:eventshare}
+    password: ${SPRING_RABBITMQ_PASSWORD:eventshare}
+    listener:
+      simple:
+        acknowledge-mode: auto
+        concurrency: 2
+        max-concurrency: 8
+        prefetch: 5
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          initial-interval: 2s
+          max-attempts: 5
+          multiplier: 2
+
+server:
+  port: 8081
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: eventshare-worker
+
+eventshare:
+  r2:
+    endpoint: ${R2_ENDPOINT:http://localhost:9000}
+    region: ${R2_REGION:auto}
+    access-key-id: ${R2_ACCESS_KEY_ID:dev}
+    secret-access-key: ${R2_SECRET_ACCESS_KEY:devsecret}
+    bucket: ${R2_BUCKET:eventshare-media}
+  processing:
+    thumbnail-max-dimension: 600
+    video-frame-timestamp: "00:00:01.000"
+
+logging:
+  level:
+    com.eventshare.worker: INFO

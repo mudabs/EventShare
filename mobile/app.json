@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "EventShare",
+    "slug": "eventshare-mobile",
+    "scheme": "eventshare",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0f172a"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": true },
+    "web": { "bundler": "metro" }
+  }
+}

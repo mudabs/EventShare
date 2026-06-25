@@ -1,0 +1,123 @@
+spring:
+  application:
+    name: eventshare-api
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/eventshare}
+    username: ${SPRING_DATASOURCE_USERNAME:eventshare}
+    password: ${SPRING_DATASOURCE_PASSWORD:eventshare}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; Hibernate only validates the mapping against it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:eventshare}
+    password: ${SPRING_RABBITMQ_PASSWORD:eventshare}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 2s
+          max-attempts: 5
+          multiplier: 2
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Clerk publishes a JWKS document; we verify RS256 signatures against it.
+          jwk-set-uri: ${CLERK_JWKS_URL:https://example.clerk.accounts.dev/.well-known/jwks.json}
+
+server:
+  port: 8080
+  forward-headers-strategy: framework
+  shutdown: graceful
+  error:
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: eventshare-api
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+# ---- Application-specific configuration ----
+eventshare:
+  app-base-url: ${APP_BASE_URL:http://localhost:3000}
+  admin-emails: ${ADMIN_EMAILS:}
+  stripe:
+    secret-key: ${STRIPE_SECRET_KEY:}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    success-url: ${BILLING_SUCCESS_URL:http://localhost/dashboard?billing=success}
+    cancel-url: ${BILLING_CANCEL_URL:http://localhost/pricing?billing=cancel}
+    price-basic: ${STRIPE_PRICE_BASIC:}
+    price-wedding-pro: ${STRIPE_PRICE_WEDDING_PRO:}
+    price-lifetime: ${STRIPE_PRICE_LIFETIME:}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  auth:
+    clerk-issuer: ${CLERK_ISSUER:}
+    clerk-audience: ${CLERK_AUDIENCE:}
+  r2:
+    endpoint: ${R2_ENDPOINT:http://localhost:9000}
+    region: ${R2_REGION:auto}
+    access-key-id: ${R2_ACCESS_KEY_ID:dev}
+    secret-access-key: ${R2_SECRET_ACCESS_KEY:devsecret}
+    bucket: ${R2_BUCKET:eventshare-media}
+    presign-upload-ttl-seconds: ${R2_PRESIGN_UPLOAD_TTL_SECONDS:900}
+    presign-download-ttl-seconds: ${R2_PRESIGN_DOWNLOAD_TTL_SECONDS:3600}
+  media:
+    max-upload-bytes: ${MEDIA_MAX_UPLOAD_BYTES:524288000}
+    allowed-content-types: ${MEDIA_ALLOWED_CONTENT_TYPES:image/jpeg,image/png,image/webp,image/heic,image/gif,video/mp4,video/quicktime,video/webm}
+  ratelimit:
+    # Simple in-process limiter (per client IP). For multi-instance, back this with Redis.
+    upload-requests-per-minute: 60
+    join-requests-per-minute: 30
+
+logging:
+  level:
+    com.eventshare: INFO
+    org.springframework.security: WARN
