@@ -2,5 +2,5 @@ services:
   # In production, the app's container Nginx listens only on localhost. The
   # host Nginx terminates TLS and forwards traffic here.
   nginx:
-    ports:
+    ports: !reset
       - "127.0.0.1:8088:80"
