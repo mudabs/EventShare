@@ -1,8 +1,8 @@
 # Deployment Guide
 
 Target: a single VPS with roughly 4 vCPU and 8 GB RAM running Docker and Docker Compose.
-Everything runs as containers defined in `docker-compose.yml`; only nginx is published to
-the host.
+In production, host Nginx terminates TLS and forwards to the container Nginx listening on
+`127.0.0.1:8088`.
 
 ## 1. Provision the host
 
@@ -41,28 +41,36 @@ Prometheus datasource and the EventShare dashboard are provisioned automatically
 
 ## 5. TLS
 
-Issue certificates with certbot (host nginx or the standalone mode), or place
-`fullchain.pem` and `privkey.pem` in `infra/nginx/certs`. Then enable the HTTPS server block
-in `infra/nginx/conf.d/default.conf` (it is provided, commented) and reload nginx:
+Use your existing host Nginx plus Certbot. Add a new site file based on
+`deploy/nginx/eventshare.conf` and point it at `http://127.0.0.1:8088`. Then let Certbot
+manage the HTTPS block:
 
 ```bash
-docker compose exec nginx nginx -s reload
+sudo cp deploy/nginx/eventshare.conf /etc/nginx/sites-available/eventshare.conf
+sudo ln -sfn /etc/nginx/sites-available/eventshare.conf /etc/nginx/sites-enabled/eventshare.conf
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d eventshare.munashemudabura.com
 ```
 
 Update APP_BASE_URL, NEXT_PUBLIC_APP_BASE_URL, NEXT_PUBLIC_API_BASE_URL, and
-CORS_ALLOWED_ORIGINS to the https URLs and rebuild the frontend
-(`docker compose up -d --build frontend`).
+CORS_ALLOWED_ORIGINS to the https URLs and rebuild the stack. For production deploys, use
+`docker-compose.prod.yml` so the container Nginx only binds to localhost:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
+```
 
 ## 6. CI/CD
 
 `.github/workflows/ci.yml` builds and tests on every push and pull request.
-`.github/workflows/deploy.yml` deploys over SSH on manual dispatch. Add repository secrets
-VPS_HOST, VPS_USER, VPS_SSH_KEY, and VPS_APP_DIR. The deploy step runs
-`git pull && docker compose build && docker compose up -d` on the VPS.
+`.github/workflows/deploy.yml` deploys automatically on push to `main` and also supports
+manual dispatch. Add repository secrets VPS_HOST, VPS_USER, VPS_SSH_KEY, and VPS_APP_DIR.
+The deploy step runs `scripts/deploy-prod.sh` on the VPS.
 
 ## 7. Updating and rollback
 
-Update: `git pull && docker compose up -d --build`. Compose recreates only changed services.
+Update: `git pull && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans`.
+Compose recreates only changed services.
 Rollback: check out the previous commit or tag and run the same command. Because Flyway
 migrations are forward-only, write expand-and-contract migrations so an older image still runs
 against a newer schema during a rollback window.
@@ -70,7 +78,7 @@ against a newer schema during a rollback window.
 ## 8. Verify a healthy deployment
 
 ```bash
-docker compose ps                 # all services Up / healthy
-curl -fsS http://localhost/api/ping
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+curl -fsSL http://127.0.0.1:8088/api/ping -L
 docker compose exec rabbitmq rabbitmq-diagnostics -q ping
 ```

@@ -67,6 +67,8 @@ infra/      nginx, prometheus, grafana, rabbitmq configuration
 docs/       Architecture, ERD, ADRs, API, environment, deployment, operations, onboarding
 .github/    CI and deployment workflows
 docker-compose.yml   Full single-VPS topology
+docker-compose.prod.yml   Production override for host-Nginx setups
+deploy/              Host Nginx site template(s) for VPS installation
 .env.example         Environment template
 ```
 
@@ -84,6 +86,19 @@ docker compose up -d --build
 Then open `http://localhost` (nginx). The API is proxied at `/api`, Grafana at `/grafana`.
 Full setup, TLS, and first-run notes are in `docs/DEPLOYMENT.md`. Every variable is
 documented in `docs/ENVIRONMENT.md`.
+
+## Production deployment model
+
+In production this repo keeps the Docker Compose stack, but it sits behind your existing
+host Nginx and Let's Encrypt setup:
+
+- Docker Compose runs the application services
+- the app's container Nginx listens only on `127.0.0.1:8088`
+- host Nginx terminates TLS and forwards traffic to that local port
+- GitHub Actions deploys on push to `main` by SSHing to the VPS and running
+  `scripts/deploy-prod.sh`
+
+See `deploy/nginx/eventshare.conf` for the host site template.
 
 ## Local development (without Docker)
 

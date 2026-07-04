@@ -15,7 +15,8 @@ The current `docker-compose.yml` starts 8 services:
 - `prometheus`
 - `grafana`
 
-Only `nginx` is exposed to the internet. The rest stay on private Docker networks.
+In production, host Nginx terminates TLS and forwards to the app's container Nginx on
+`127.0.0.1:8088`. The rest stay on private Docker networks.
 
 ## Prerequisites
 
@@ -70,24 +71,25 @@ cp .env.example .env
 6. Start everything:
 
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
 ```
 
 7. Check service status:
 
 ```bash
-docker compose ps
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
 ```
 
 8. Check the API health endpoint:
 
 ```bash
-curl -fsS http://localhost/api/ping
+curl -fsSL http://127.0.0.1:8088/api/ping -L
 ```
 
 9. If needed, check logs:
 
 ```bash
+cd ~/apps/eventshare
 docker compose logs -f api
 docker compose logs -f worker
 docker compose logs -f frontend
@@ -101,8 +103,22 @@ When you want to deploy a new version:
 ssh munashe@66.179.81.222
 cd ~/apps/eventshare
 git pull
-docker compose up -d --build
+bash scripts/deploy-prod.sh
 ```
+
+## Troubleshooting
+
+- If `curl http://127.0.0.1:8088/api/ping` fails, check the app Nginx container and the host Nginx site config.
+- If `docker compose logs -f ...` says `no configuration file provided`, make sure you are in `~/apps/eventshare` first.
+- If the SSH session disconnects during a long build, reconnect and run:
+
+```bash
+cd ~/apps/eventshare
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker compose logs -f api
+```
+
+The containers keep running on the VPS even if your SSH session drops.
 
 ## Rollback
 
@@ -112,7 +128,7 @@ If a release causes problems:
 2. Run:
 
 ```bash
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
 ```
 
 ## Notes

@@ -1,8 +1,8 @@
 name: Deploy
 
-# Manual trigger keeps deploys deliberate. Change to `push` on main, or gate on a
-# successful CI run via `workflow_run`, once you are comfortable auto-deploying.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -16,10 +16,9 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script_stop: true
           script: |
-            set -e
+            set -euo pipefail
             cd ${{ secrets.VPS_APP_DIR }}
-            git pull --ff-only
-            docker compose build
-            docker compose up -d
-            docker image prune -f
+            bash scripts/deploy-prod.sh
