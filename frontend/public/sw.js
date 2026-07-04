@@ -1,6 +1,6 @@
 // EventShare service worker: stale-while-revalidate for the app shell.
 // API responses and cross-origin assets (R2, Clerk) are never cached.
-const CACHE = 'eventshare-shell-v1';
+const CACHE = 'eventshare-shell-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 

@@ -3,7 +3,7 @@ import type {
   AdminEvent, AdminUser, EventSettings, JoinResponse, MediaItem, ModerationState, MyEventCard, OwnerDashboard, Plan, PlatformStats, Profile, PromoCode, PublicEvent, Subscription, UserDashboard, WhitelistEntry, UploadUrlRequest, UploadUrlResponse
 } from './types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || '/api';
 
 export class ApiError extends Error {
   status: number;
