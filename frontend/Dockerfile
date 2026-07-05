@@ -4,7 +4,8 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci || npm install
+# This app does not ship a frontend package-lock, so use a plain install.
+RUN npm install
 
 # ---- Build ----
 FROM node:22-alpine AS build
