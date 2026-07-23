@@ -1,20 +1,36 @@
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { JoinByCodeForm } from '@/components/JoinByCodeForm';
+import { PhotoSlot } from '@/components/PhotoSlot';
+import { HeroScene, StepCreate, StepShare, StepGallery } from '@/components/illustrations';
 
 const STEPS = [
   {
+    Icon: StepCreate,
     title: 'Create your event',
     body: 'Set up a room for your wedding or celebration in seconds.'
   },
   {
+    Icon: StepShare,
     title: 'Share a QR or link',
     body: 'Guests scan and join instantly. No app, no accounts to create.'
   },
   {
+    Icon: StepGallery,
     title: 'Watch the gallery fill',
     body: 'Every photo and video lands in one beautiful shared album.'
   }
+];
+
+// Drop real photos at these paths (see public/images/README.md) and they appear
+// automatically; until then, on-brand placeholders keep the layout alive.
+const GALLERY_PREVIEW = [
+  { src: '/images/gallery-1.jpg', ratio: 'aspect-[3/4]' },
+  { src: '/images/gallery-2.jpg', ratio: 'aspect-square' },
+  { src: '/images/gallery-3.jpg', ratio: 'aspect-square' },
+  { src: '/images/gallery-4.jpg', ratio: 'aspect-[3/4]' },
+  { src: '/images/gallery-5.jpg', ratio: 'aspect-square' },
+  { src: '/images/gallery-6.jpg', ratio: 'aspect-square' }
 ];
 
 export default function HomePage() {
@@ -24,7 +40,7 @@ export default function HomePage() {
 
       <main>
         {/* Hero */}
-        <section className="mx-auto max-w-3xl px-4 pb-16 pt-20 text-center sm:pt-28">
+        <section className="mx-auto max-w-3xl px-4 pb-10 pt-20 text-center sm:pt-24">
           <p className="script text-4xl sm:text-5xl">Every moment, together</p>
           <h1 className="mt-3 text-4xl font-semibold leading-tight sm:text-6xl">
             Every photo from your event, in one place.
@@ -44,6 +60,8 @@ export default function HomePage() {
               <JoinByCodeForm />
             </div>
           </div>
+
+          <HeroScene className="mx-auto mt-12 w-full max-w-md" />
         </section>
 
         <div className="divider-flourish" />
@@ -52,14 +70,25 @@ export default function HomePage() {
         <section className="mx-auto max-w-5xl px-4 py-16">
           <h2 className="text-center text-3xl font-semibold">How it works</h2>
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
-            {STEPS.map((step, i) => (
-              <div key={step.title} className="card p-6 text-center">
-                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-blush font-serif text-lg font-semibold text-brand">
-                  {i + 1}
-                </div>
-                <h3 className="mt-4 text-xl font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm text-ink/70">{step.body}</p>
+            {STEPS.map(({ Icon, title, body }) => (
+              <div key={title} className="card p-6 text-center">
+                <Icon className="mx-auto h-16 w-16" />
+                <h3 className="mt-3 text-xl font-semibold">{title}</h3>
+                <p className="mt-2 text-sm text-ink/70">{body}</p>
               </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Gallery preview (fillable photo slots) */}
+        <section className="mx-auto max-w-5xl px-4 pb-16">
+          <div className="text-center">
+            <p className="script text-3xl">A peek at the gallery</p>
+            <h2 className="mt-1 text-3xl font-semibold">Memories from every guest</h2>
+          </div>
+          <div className="mt-8 columns-2 gap-4 sm:columns-3 [&>*]:mb-4">
+            {GALLERY_PREVIEW.map((p, i) => (
+              <PhotoSlot key={i} src={p.src} ratio={p.ratio} alt="Event photo" className="break-inside-avoid" />
             ))}
           </div>
         </section>

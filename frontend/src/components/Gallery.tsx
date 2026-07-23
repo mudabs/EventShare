@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { fetchGallery } from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { MediaTile } from './MediaTile';
+import { EmptyGallery } from './illustrations';
 
 export function Gallery({ code }: { code: string }) {
   const {
@@ -40,13 +41,19 @@ export function Gallery({ code }: { code: string }) {
   const items = data?.pages.flatMap((p) => p.items) ?? [];
 
   if (isLoading) {
-    return <p className="py-8 text-center text-slate-500">Loading gallery…</p>;
+    return <p className="py-8 text-center text-ink/50">Loading gallery…</p>;
   }
   if (isError) {
     return <p className="py-8 text-center text-red-600">Could not load the gallery.</p>;
   }
   if (items.length === 0) {
-    return <p className="py-8 text-center text-slate-500">No photos yet. Be the first to share!</p>;
+    return (
+      <div className="flex flex-col items-center py-12 text-center">
+        <EmptyGallery className="w-40" />
+        <p className="mt-4 font-serif text-xl text-wine">No photos yet</p>
+        <p className="mt-1 text-sm text-ink/60">Be the first to share a moment.</p>
+      </div>
+    );
   }
 
   return (
@@ -58,7 +65,7 @@ export function Gallery({ code }: { code: string }) {
       </div>
       <div ref={sentinel} className="h-10" />
       {isFetchingNextPage && (
-        <p className="py-4 text-center text-sm text-slate-500">Loading more…</p>
+        <p className="py-4 text-center text-sm text-ink/50">Loading more…</p>
       )}
     </div>
   );
