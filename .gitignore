@@ -53,3 +53,6 @@ data/
 # Agent / tooling artifacts
 .agents/
 .github/modernize/
+
+# Personal deployment reference (not for the repo)
+DEPLOYMENT_MANUAL.md
