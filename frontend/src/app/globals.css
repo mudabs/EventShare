@@ -6,6 +6,82 @@
   color-scheme: light;
 }
 
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+@layer base {
+  body {
+    @apply bg-blush text-ink antialiased font-sans;
+    background-image: theme('backgroundImage.blush-radial');
+    background-repeat: no-repeat;
+  }
+
+  /* Elegant serif headings in deep wine set the romantic tone everywhere. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-serif text-wine;
+    letter-spacing: -0.01em;
+  }
+
+  h1 {
+    @apply font-semibold;
+  }
+
+  a {
+    @apply transition-colors duration-200;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand/40 ring-offset-2 ring-offset-blush;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all duration-200 disabled:opacity-60 disabled:pointer-events-none;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand text-white shadow-soft hover:bg-brand-dark hover:-translate-y-0.5;
+  }
+
+  .btn-outline {
+    @apply btn border border-brand/30 bg-white/70 text-wine hover:border-brand hover:text-brand;
+  }
+
+  .btn-ghost {
+    @apply btn text-ink/70 hover:text-brand;
+  }
+
+  .card {
+    @apply rounded-2xl border border-brand/10 bg-white shadow-card;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-brand/20 bg-white px-4 py-2.5 text-ink placeholder:text-ink/40 transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-wine/80;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full bg-blush px-3 py-1 text-xs font-medium text-wine;
+  }
+
+  /* Decorative script accent (Great Vibes) for hero flourishes and the wordmark. */
+  .script {
+    @apply font-script text-brand;
+  }
+
+  /* Small gold divider flourish used under headings. */
+  .divider-flourish {
+    @apply mx-auto h-px w-24 bg-gradient-to-r from-transparent via-gold-soft to-transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

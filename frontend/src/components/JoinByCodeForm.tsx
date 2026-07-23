@@ -22,12 +22,9 @@ export function JoinByCodeForm() {
         onChange={(e) => setCode(e.target.value)}
         placeholder="Enter event code"
         aria-label="Event code"
-        className="flex-1 rounded-md border border-slate-300 px-3 py-2 uppercase tracking-wide focus:border-brand focus:outline-none"
+        className="input flex-1 text-center uppercase tracking-[0.2em]"
       />
-      <button
-        type="submit"
-        className="rounded-md bg-brand px-4 py-2 font-medium text-white hover:bg-brand-dark"
-      >
+      <button type="submit" className="btn-primary shrink-0">
         Join
       </button>
     </form>

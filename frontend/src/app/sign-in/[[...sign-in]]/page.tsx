@@ -1,8 +1,13 @@
+import Link from 'next/link';
 import { SignIn } from '@clerk/nextjs';
 
 export default function SignInPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
+    <main className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <Link href="/" className="mb-6 flex items-baseline gap-1.5" aria-label="EventShare home">
+        <span className="script text-4xl leading-none">Event</span>
+        <span className="font-serif text-2xl font-semibold text-wine">Share</span>
+      </Link>
       <SignIn />
     </main>
   );

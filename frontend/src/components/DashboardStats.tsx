@@ -6,9 +6,9 @@ import { fetchUserDashboard } from '@/lib/api';
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 text-center">
-      <div className="text-2xl font-bold text-slate-900">{value}</div>
-      <div className="text-xs text-slate-500">{label}</div>
+    <div className="card p-5 text-center">
+      <div className="font-serif text-3xl font-semibold text-brand">{value}</div>
+      <div className="mt-1 text-xs uppercase tracking-wide text-ink/50">{label}</div>
     </div>
   );
 }

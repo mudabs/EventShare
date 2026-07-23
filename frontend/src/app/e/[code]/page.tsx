@@ -29,10 +29,10 @@ export default function EventPage() {
     <div className="min-h-screen">
       <Header />
       <main className="mx-auto max-w-3xl px-4 py-6">
-        {isLoading && <p className="py-12 text-center text-slate-500">Loading event...</p>}
+        {isLoading && <p className="py-12 text-center text-ink/50">Loading event...</p>}
 
         {(isError || (!isLoading && !event)) && (
-          <p className="py-12 text-center text-slate-600">
+          <p className="py-12 text-center text-ink/70">
             We could not find an event for code <span className="font-mono font-semibold">{code}</span>.
           </p>
         )}
@@ -40,18 +40,19 @@ export default function EventPage() {
         {event && (
           <div className="space-y-6">
             {/* Join landing: one cover image + event name */}
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="card overflow-hidden">
               {event.coverImageUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={event.coverImageUrl} alt={event.name} className="aspect-video w-full object-cover" />
               ) : (
-                <div className="flex aspect-video w-full items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-500 text-5xl text-white/80">
+                <div className="flex aspect-video w-full items-center justify-center bg-gradient-to-br from-brand-soft via-brand to-gold-soft font-script text-6xl text-white">
                   {event.name.charAt(0).toUpperCase()}
                 </div>
               )}
-              <div className="p-5 text-center">
-                <h1 className="text-2xl font-bold">{event.name}</h1>
-                <p className="text-sm text-slate-500">
+              <div className="p-6 text-center">
+                <p className="script text-2xl">You're invited to</p>
+                <h1 className="mt-1 text-3xl font-semibold">{event.name}</h1>
+                <p className="mt-1 text-sm uppercase tracking-wide text-ink/50">
                   {event.eventType.charAt(0) + event.eventType.slice(1).toLowerCase()}
                 </p>
               </div>
@@ -63,21 +64,23 @@ export default function EventPage() {
               ) : isSignedIn ? (
                 <AuthedEventJoin code={code} onJoined={() => undefined} />
               ) : (
-                <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-5 text-center">
-                  <p className="text-sm text-slate-600">
+                <div className="card space-y-3 p-6 text-center">
+                  <p className="text-sm text-ink/70">
                     Join this event to add your photos and videos.
                   </p>
                   <SignInButton mode="modal" forceRedirectUrl={returnUrl} signUpForceRedirectUrl={returnUrl}>
-                    <button className="w-full rounded-md bg-brand px-4 py-3 font-medium text-white hover:bg-brand-dark">
-                      Sign in to join
-                    </button>
+                    <button className="btn-primary w-full py-3">Sign in to join</button>
                   </SignInButton>
-                  <div className="text-xs uppercase tracking-wide text-slate-400">or continue as a guest</div>
+                  <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink/40">
+                    <span className="h-px flex-1 bg-brand/10" />
+                    or continue as a guest
+                    <span className="h-px flex-1 bg-brand/10" />
+                  </div>
                   <JoinPrompt code={code} onJoined={() => undefined} />
                 </div>
               )
             ) : (
-              <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+              <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
                 This event is archived. You can still browse the gallery below.
               </p>
             )}

@@ -42,26 +42,26 @@ export function CreateEventForm({ onCreated }: { onCreated: (event: EventRespons
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-6">
+    <form onSubmit={handleSubmit} className="card space-y-4 p-6">
       <div>
-        <label className="block text-sm font-medium text-slate-700">Event name</label>
+        <label className="label">Event name</label>
         <input
           required
           maxLength={200}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+          className="input mt-1.5"
           placeholder="Sam & Tari's Wedding"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700">Type</label>
+          <label className="label">Type</label>
           <select
             value={eventType}
             onChange={(e) => setEventType(e.target.value as EventType)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+            className="input mt-1.5"
           >
             {EVENT_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -71,34 +71,30 @@ export function CreateEventForm({ onCreated }: { onCreated: (event: EventRespons
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700">Date (optional)</label>
+          <label className="label">Date (optional)</label>
           <input
             type="date"
             value={eventDate}
             onChange={(e) => setEventDate(e.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+            className="input mt-1.5"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Description (optional)</label>
+        <label className="label">Description (optional)</label>
         <textarea
           maxLength={5000}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+          className="input mt-1.5"
         />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full rounded-md bg-brand px-4 py-2 font-medium text-white hover:bg-brand-dark disabled:opacity-60"
-      >
+      <button type="submit" disabled={submitting} className="btn-primary w-full">
         {submitting ? 'Creating…' : 'Create event'}
       </button>
     </form>

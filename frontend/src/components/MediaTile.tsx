@@ -9,7 +9,7 @@ export function MediaTile({ item }: { item: MediaItem }) {
       href={item.originalUrl}
       target="_blank"
       rel="noreferrer"
-      className="group relative block aspect-square overflow-hidden rounded-md bg-slate-200"
+      className="group relative block aspect-square overflow-hidden rounded-xl bg-blush ring-1 ring-brand/10"
       title={item.originalFilename ?? 'media'}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -17,11 +17,15 @@ export function MediaTile({ item }: { item: MediaItem }) {
         src={previewSrc}
         alt={item.originalFilename ?? 'Event media'}
         loading="lazy"
-        className="h-full w-full object-cover transition group-hover:scale-105"
+        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
       />
       {item.mediaType === 'VIDEO' && (
-        <span className="absolute inset-0 flex items-center justify-center text-3xl text-white drop-shadow">
-          ▶
+        <span className="absolute inset-0 flex items-center justify-center">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-white" aria-hidden="true">
+              <path d="M8 5.14v13.72a1 1 0 0 0 1.54.84l10.29-6.86a1 1 0 0 0 0-1.68L9.54 4.3A1 1 0 0 0 8 5.14z" />
+            </svg>
+          </span>
         </span>
       )}
       {processing && (

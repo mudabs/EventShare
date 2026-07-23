@@ -7,9 +7,11 @@ export default function PricingPage() {
     <div className="min-h-screen">
       <Header />
       <main className="mx-auto max-w-6xl px-4 py-10">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold">Plans for every event</h1>
-          <p className="mt-2 text-slate-600">Start free. Upgrade when your event grows.</p>
+        <div className="mb-10 text-center">
+          <p className="script text-3xl">Simple pricing</p>
+          <h1 className="mt-1 text-4xl font-semibold">Plans for every event</h1>
+          <p className="mt-3 text-ink/70">Start free. Upgrade when your event grows.</p>
+          <div className="divider-flourish mt-6" />
         </div>
         <PricingPlans />
         <RedeemPromo />
