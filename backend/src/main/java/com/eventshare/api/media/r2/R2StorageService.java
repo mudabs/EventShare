@@ -2,6 +2,8 @@ package com.eventshare.api.media.r2;
 
 import com.eventshare.api.config.AppProperties;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
@@ -14,6 +16,9 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -90,5 +95,30 @@ public class R2StorageService {
                 .bucket(r2.bucket())
                 .key(objectKey)
                 .build());
+    }
+
+    /**
+     * Streams an object from R2 into a fresh temp file and returns its path. Used
+     * by in-process media processing (thumbnail/poster generation), where the bytes
+     * must be read server-side rather than presigned to the browser.
+     */
+    public Path downloadToTempFile(String objectKey, String suffix) throws IOException {
+        Path target = Files.createTempFile("es-orig-", suffix);
+        Files.deleteIfExists(target); // the SDK requires the destination not to exist yet
+        s3Client.getObject(
+                GetObjectRequest.builder().bucket(r2.bucket()).key(objectKey).build(),
+                ResponseTransformer.toFile(target));
+        return target;
+    }
+
+    /** Uploads a local file to R2 under the given key and content type. */
+    public void uploadFile(Path file, String objectKey, String contentType) {
+        s3Client.putObject(
+                PutObjectRequest.builder()
+                        .bucket(r2.bucket())
+                        .key(objectKey)
+                        .contentType(contentType)
+                        .build(),
+                RequestBody.fromFile(file));
     }
 }

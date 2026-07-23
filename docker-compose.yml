@@ -1,10 +1,10 @@
 # =============================================================================
-# EventShare - single-VPS deployment topology (modular monolith + worker).
+# EventShare - single-VPS deployment topology (modular monolith).
 #
 #   nginx (edge, TLS) -> frontend (Next.js) + api (Spring Boot)
-#   api -> postgres (state) + rabbitmq (async) + Cloudflare R2 (media, external)
-#   worker <- rabbitmq, processes media, writes back to postgres + R2
-#   prometheus scrapes api/worker; grafana visualises.
+#   api -> postgres (state) + Cloudflare R2 (media, external)
+#   api also processes media in-process (thumbnails/posters) via a scheduler
+#   prometheus scrapes api; grafana visualises.
 #
 # Only nginx is published to the host. Everything else talks over the private
 # "edge"/"backend" networks. Bring up with:  docker compose up -d --build
@@ -26,7 +26,6 @@ networks:
 
 volumes:
   postgres_data:
-  rabbitmq_data:
   prometheus_data:
   grafana_data:
 
@@ -50,24 +49,6 @@ services:
     logging: *default-logging
 
   # ---------------------------------------------------------------------------
-  rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-      - ./infra/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
-    networks: [backend]
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-    logging: *default-logging
-
-  # ---------------------------------------------------------------------------
   api:
     build:
       context: ./backend
@@ -78,10 +59,6 @@ services:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      SPRING_RABBITMQ_HOST: ${SPRING_RABBITMQ_HOST}
-      SPRING_RABBITMQ_PORT: ${SPRING_RABBITMQ_PORT}
-      SPRING_RABBITMQ_USERNAME: ${SPRING_RABBITMQ_USERNAME}
-      SPRING_RABBITMQ_PASSWORD: ${SPRING_RABBITMQ_PASSWORD}
       APP_BASE_URL: ${APP_BASE_URL}
       ADMIN_EMAILS: ${ADMIN_EMAILS}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
@@ -108,47 +85,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     networks: [backend, edge]
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/readiness"]
       interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
-    logging: *default-logging
-
-  # ---------------------------------------------------------------------------
-  worker:
-    build:
-      context: ./worker
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      SPRING_RABBITMQ_HOST: ${SPRING_RABBITMQ_HOST}
-      SPRING_RABBITMQ_PORT: ${SPRING_RABBITMQ_PORT}
-      SPRING_RABBITMQ_USERNAME: ${SPRING_RABBITMQ_USERNAME}
-      SPRING_RABBITMQ_PASSWORD: ${SPRING_RABBITMQ_PASSWORD}
-      R2_ENDPOINT: ${R2_ENDPOINT}
-      R2_REGION: ${R2_REGION}
-      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
-      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
-      R2_BUCKET: ${R2_BUCKET}
-      JAVA_OPTS: ${JAVA_OPTS}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks: [backend]
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health"]
-      interval: 20s
       timeout: 5s
       retries: 10
       start_period: 60s

@@ -36,6 +36,24 @@ public interface MediaRepository extends JpaRepository<Media, UUID> {
                                  @Param("cursorId") UUID cursorId,
                                  Pageable pageable);
 
+    // ---- In-process media processing queue (status-driven) ----
+
+    /**
+     * Assets awaiting processing: freshly UPLOADED rows, plus rows left in
+     * PROCESSING past the staleness cutoff (recovery after a crash mid-processing).
+     * Oldest first for fair, roughly FIFO handling.
+     */
+    @Query("""
+            select m from Media m
+            where m.status = :uploaded
+               or (m.status = :processing and m.updatedAt < :staleCutoff)
+            order by m.createdAt asc, m.id asc
+            """)
+    List<Media> findProcessableBatch(@Param("uploaded") MediaStatus uploaded,
+                                     @Param("processing") MediaStatus processing,
+                                     @Param("staleCutoff") Instant staleCutoff,
+                                     Pageable pageable);
+
     // ---- Duplicate detection (exact, SHA-256) ----
 
     Optional<Media> findFirstByEventIdAndSha256OrderByCreatedAtAscIdAsc(UUID eventId, String sha256);

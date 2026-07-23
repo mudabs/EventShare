@@ -29,19 +29,6 @@ spring:
     baseline-on-migrate: false
     locations: classpath:db/migration
 
-  rabbitmq:
-    host: ${SPRING_RABBITMQ_HOST:localhost}
-    port: ${SPRING_RABBITMQ_PORT:5672}
-    username: ${SPRING_RABBITMQ_USERNAME:eventshare}
-    password: ${SPRING_RABBITMQ_PASSWORD:eventshare}
-    listener:
-      simple:
-        retry:
-          enabled: true
-          initial-interval: 2s
-          max-attempts: 5
-          multiplier: 2
-
   security:
     oauth2:
       resourceserver:
@@ -112,6 +99,16 @@ eventshare:
   media:
     max-upload-bytes: ${MEDIA_MAX_UPLOAD_BYTES:524288000}
     allowed-content-types: ${MEDIA_ALLOWED_CONTENT_TYPES:image/jpeg,image/png,image/webp,image/heic,image/gif,video/mp4,video/quicktime,video/webm}
+  # In-process media processing (thumbnails + video posters). Formerly a separate
+  # worker service; now runs inside the API, polling the media table for work.
+  processing:
+    enabled: ${MEDIA_PROCESSING_ENABLED:true}
+    thumbnail-max-dimension: ${THUMBNAIL_MAX_DIMENSION:600}
+    video-frame-timestamp: ${VIDEO_FRAME_TIMESTAMP:00:00:01.000}
+    poll-interval-ms: ${MEDIA_PROCESSING_POLL_MS:5000}
+    initial-delay-ms: ${MEDIA_PROCESSING_INITIAL_DELAY_MS:10000}
+    batch-size: ${MEDIA_PROCESSING_BATCH_SIZE:3}
+    stale-after-seconds: ${MEDIA_PROCESSING_STALE_SECONDS:300}
   ratelimit:
     # Simple in-process limiter (per client IP). For multi-instance, back this with Redis.
     upload-requests-per-minute: 60

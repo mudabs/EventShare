@@ -1,0 +1,44 @@
+# =============================================================================
+# Local resource overrides for a small (~2 GB) single VPS.
+#
+# - Monitoring (prometheus, grafana) is moved behind an opt-in profile so a plain
+#   `docker compose up -d` starts ONLY the core app stack.
+# - Every container gets a hard mem_limit so a memory spike kills that one
+#   container (which then restarts) instead of triggering the kernel OOM killer
+#   and freezing the whole box.
+#
+# NOTE: the standalone worker and RabbitMQ have been removed; media processing
+# (thumbnails + video posters) now runs in-process inside the API.
+#
+# Core stack (always on):   postgres, api, frontend, nginx
+# Opt-in later:
+#   docker compose --profile monitoring up -d    # enable prometheus + grafana
+#
+# Pair this with a capped heap in .env:
+#   JAVA_OPTS=-Xms96m -Xmx320m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -Xss512k
+# =============================================================================
+
+services:
+  postgres:
+    mem_limit: 220m
+    mem_reservation: 128m
+
+  api:
+    mem_limit: 700m
+    mem_reservation: 480m
+
+  frontend:
+    mem_limit: 256m
+    mem_reservation: 160m
+
+  nginx:
+    mem_limit: 48m
+
+  # --- Opt-in below: excluded from the default `up` on a small box ---
+  prometheus:
+    profiles: ["monitoring"]
+    mem_limit: 256m
+
+  grafana:
+    profiles: ["monitoring"]
+    mem_limit: 256m

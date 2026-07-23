@@ -14,6 +14,7 @@ public record AppProperties(
         Auth auth,
         R2 r2,
         Media media,
+        Processing processing,
         RateLimit ratelimit
 ) {
     public record Cors(String allowedOrigins) {}
@@ -31,6 +32,19 @@ public record AppProperties(
     ) {}
 
     public record Media(long maxUploadBytes, String allowedContentTypes) {}
+
+    /**
+     * In-process media-processing pipeline (thumbnails, video posters). Replaces the
+     * former standalone worker; a scheduler polls the media table every
+     * {@code poll-interval-ms} (read directly by {@code @Scheduled}).
+     */
+    public record Processing(
+            boolean enabled,
+            int thumbnailMaxDimension,
+            String videoFrameTimestamp,
+            int batchSize,
+            long staleAfterSeconds
+    ) {}
 
     public record RateLimit(int uploadRequestsPerMinute, int joinRequestsPerMinute) {}
 }

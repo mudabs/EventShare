@@ -11,7 +11,6 @@ import com.eventshare.api.media.dto.CompleteUploadRequest;
 import com.eventshare.api.media.dto.MediaResponse;
 import com.eventshare.api.media.dto.UploadUrlRequest;
 import com.eventshare.api.media.dto.UploadUrlResponse;
-import com.eventshare.api.media.messaging.MediaEventPublisher;
 import com.eventshare.api.media.r2.R2StorageService;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +43,6 @@ class MediaServiceTest {
     @Mock MediaRepository media;
     @Mock EventRepository events;
     @Mock R2StorageService storage;
-    @Mock MediaEventPublisher publisher;
     @Mock AuditService audit;
     @Mock com.eventshare.api.common.util.RateLimiter rateLimiter;
 
@@ -57,6 +55,7 @@ class MediaServiceTest {
                 new AppProperties.Auth("", ""),
                 new AppProperties.R2("http://r2", "auto", "k", "s", "bucket", 900, 3600),
                 new AppProperties.Media(1000L, "image/jpeg,video/mp4"),
+                new AppProperties.Processing(true, 600, "00:00:01.000", 3, 300),
                 new AppProperties.RateLimit(60, 30));
     }
 
@@ -71,7 +70,7 @@ class MediaServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new MediaService(media, events, storage, publisher, audit, rateLimiter, props(), new SimpleMeterRegistry());
+        service = new MediaService(media, events, storage, audit, rateLimiter, props(), new SimpleMeterRegistry());
         when(rateLimiter.tryAcquire(any(), anyInt())).thenReturn(true);
         when(media.save(any(Media.class))).thenAnswer(i -> i.getArgument(0));
         when(storage.presignDownload(anyString())).thenReturn("https://r2.example/dl");
@@ -127,7 +126,7 @@ class MediaServiceTest {
     }
 
     @Test
-    void completeUploadFlagsExactDuplicateAndPublishes() {
+    void completeUploadFlagsExactDuplicateAndEnqueues() {
         UUID eventId = UUID.randomUUID();
         Media pending = new Media();
         pending.setId(UUID.randomUUID());
@@ -152,9 +151,9 @@ class MediaServiceTest {
 
         assertThat(response.duplicate()).isTrue();
         assertThat(pending.getDuplicateOfId()).isEqualTo(original.getId());
+        // Left in UPLOADED so the in-process scheduler picks it up (no broker publish).
         assertThat(pending.getStatus()).isEqualTo(MediaStatus.UPLOADED);
         assertThat(pending.getSizeBytes()).isEqualTo(123L);
-        verify(publisher).publishUploaded(any(Media.class));
     }
 
     @Test
@@ -172,7 +171,6 @@ class MediaServiceTest {
                 done.getId(), new CompleteUploadRequest("b".repeat(64), null, null), "203.0.113.1");
 
         assertThat(response.status()).isEqualTo("UPLOADED");
-        verify(publisher, never()).publishUploaded(any());
         verify(storage, never()).headObject(anyString());
     }
 

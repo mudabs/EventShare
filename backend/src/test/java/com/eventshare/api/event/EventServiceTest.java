@@ -52,6 +52,7 @@ class EventServiceTest {
                 new AppProperties.Auth("", ""),
                 new AppProperties.R2("http://r2", "auto", "k", "s", "bucket", 900, 3600),
                 new AppProperties.Media(524_288_000L, "image/jpeg,video/mp4"),
+                new AppProperties.Processing(true, 600, "00:00:01.000", 3, 300),
                 new AppProperties.RateLimit(60, 30));
     }
 

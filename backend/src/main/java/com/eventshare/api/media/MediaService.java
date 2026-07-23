@@ -16,7 +16,6 @@ import com.eventshare.api.media.dto.GalleryPageResponse;
 import com.eventshare.api.media.dto.MediaResponse;
 import com.eventshare.api.media.dto.UploadUrlRequest;
 import com.eventshare.api.media.dto.UploadUrlResponse;
-import com.eventshare.api.media.messaging.MediaEventPublisher;
 import com.eventshare.api.media.r2.R2StorageService;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -44,7 +43,6 @@ public class MediaService {
     private final MediaRepository media;
     private final EventRepository events;
     private final R2StorageService storage;
-    private final MediaEventPublisher publisher;
     private final AuditService audit;
     private final RateLimiter rateLimiter;
     private final AppProperties props;
@@ -54,7 +52,6 @@ public class MediaService {
     public MediaService(MediaRepository media,
                         EventRepository events,
                         R2StorageService storage,
-                        MediaEventPublisher publisher,
                         AuditService audit,
                         RateLimiter rateLimiter,
                         AppProperties props,
@@ -62,7 +59,6 @@ public class MediaService {
         this.media = media;
         this.events = events;
         this.storage = storage;
-        this.publisher = publisher;
         this.audit = audit;
         this.rateLimiter = rateLimiter;
         this.props = props;
@@ -120,8 +116,9 @@ public class MediaService {
     }
 
     /**
-     * Confirms an upload: verifies the object exists in R2, records hash/size,
-     * runs exact duplicate detection, then publishes the async processing event.
+     * Confirms an upload: verifies the object exists in R2, records hash/size, and
+     * runs exact duplicate detection. Leaving the row in UPLOADED enqueues it for the
+     * in-process media processor (thumbnail/poster generation), which polls by status.
      * Idempotent: re-calling after completion returns the current state.
      */
     @Transactional
@@ -154,7 +151,8 @@ public class MediaService {
                 });
 
         Media saved = media.save(entity);
-        publisher.publishUploaded(saved);
+        // No message published: the row is now UPLOADED and the in-process scheduler
+        // (MediaProcessingScheduler) will pick it up on its next poll.
 
         audit.record(saved.getEventId(), saved.getUploaderUserId(), saved.getUploaderDisplayName(),
                 "MEDIA_UPLOADED", "MEDIA", saved.getId(),
