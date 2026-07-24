@@ -57,16 +57,16 @@ export function UploadButton({ code }: { code: string }) {
         <button
           onClick={() => fileInput.current?.click()}
           disabled={busy}
-          className="flex-1 rounded-md bg-brand px-4 py-3 font-medium text-white hover:bg-brand-dark disabled:opacity-60"
+          className="btn-primary flex-1 py-3"
         >
-          Add photos & videos
+          Add photos &amp; videos
         </button>
         <button
           onClick={() => setCameraOpen(true)}
           disabled={busy}
           aria-label="Capture from camera"
           title="Capture from camera"
-          className="flex items-center justify-center rounded-md border border-brand px-4 py-3 text-brand hover:bg-indigo-50 disabled:opacity-60"
+          className="flex items-center justify-center rounded-full border border-brand/40 px-4 py-3 text-brand transition-colors hover:bg-brand/10 disabled:opacity-60"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M14.5 4l1.5 2h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l1.5-2z" />
@@ -85,7 +85,7 @@ export function UploadButton({ code }: { code: string }) {
       />
 
       {busy && progress && (
-        <p className="text-sm text-slate-600">Uploading {progress.done} of {progress.total}...</p>
+        <p className="text-sm text-ink/60">Uploading {progress.done} of {progress.total}...</p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
 

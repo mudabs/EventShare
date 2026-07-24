@@ -14,9 +14,9 @@ function formatBytes(bytes: number): string {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="text-2xl font-bold text-slate-900">{value}</div>
-      <div className="text-xs text-slate-500">{label}</div>
+    <div className="card p-4">
+      <div className="font-serif text-2xl font-semibold text-brand">{value}</div>
+      <div className="text-xs text-ink/50">{label}</div>
     </div>
   );
 }
@@ -24,8 +24,8 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 function ActivityChart({ data }: { data: DayCount[] }) {
   const max = Math.max(1, ...data.map((d) => d.count));
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="mb-2 text-sm font-medium text-slate-700">Upload activity (14 days)</div>
+    <div className="card p-4">
+      <div className="mb-2 text-sm font-medium text-wine/80">Upload activity (14 days)</div>
       <div className="flex h-32 items-end gap-1">
         {data.map((d) => (
           <div key={d.date} className="flex flex-1 flex-col items-center justify-end" title={`${d.date}: ${d.count}`}>
@@ -48,7 +48,7 @@ export function OwnerDashboard({ eventId }: { eventId: string }) {
   });
 
   if (isLoading) {
-    return <div className="h-48 animate-pulse rounded-lg bg-slate-100" />;
+    return <div className="h-48 animate-pulse rounded-2xl bg-blush" />;
   }
   if (isError || !data) {
     return <p className="text-red-600">Could not load analytics for this event.</p>;
@@ -68,7 +68,7 @@ export function OwnerDashboard({ eventId }: { eventId: string }) {
       </div>
       <ActivityChart data={data.uploadActivity} />
       {data.expiresAt && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink/50">
           Expires {new Date(data.expiresAt).toLocaleDateString()}
         </p>
       )}

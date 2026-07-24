@@ -23,7 +23,7 @@ export function EventSettingsPanel({ eventId }: { eventId: string }) {
   }, [data]);
 
   if (!form) {
-    return <div className="h-40 animate-pulse rounded-lg bg-slate-100" />;
+    return <div className="h-40 animate-pulse rounded-2xl bg-blush" />;
   }
 
   function update<K extends keyof EventSettings>(key: K, value: EventSettings[K]) {
@@ -50,18 +50,18 @@ export function EventSettingsPanel({ eventId }: { eventId: string }) {
   }
 
   return (
-    <div className="space-y-5 rounded-lg border border-slate-200 bg-white p-5">
+    <div className="card space-y-5 p-6">
       <div>
-        <label className="block text-sm font-medium text-slate-700">Event name</label>
+        <label className="label">Event name</label>
         <input
           value={form.name}
           onChange={(e) => update('name', e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+          className="input mt-1.5"
         />
       </div>
 
       <div>
-        <span className="block text-sm font-medium text-slate-700">Uploader visibility</span>
+        <span className="label">Uploader visibility</span>
         <div className="mt-2 space-y-1 text-sm">
           <label className="flex items-center gap-2">
             <input type="radio" checked={form.uploaderVisibility === 'NAMED'} onChange={() => update('uploaderVisibility', 'NAMED')} />
@@ -90,11 +90,7 @@ export function EventSettingsPanel({ eventId }: { eventId: string }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          onClick={save}
-          disabled={saving}
-          className="rounded-md bg-brand px-4 py-2 font-medium text-white hover:bg-brand-dark disabled:opacity-60"
-        >
+        <button onClick={save} disabled={saving} className="btn-primary">
           {saving ? 'Saving...' : 'Save settings'}
         </button>
         {saved && <span className="text-sm text-green-600">Saved</span>}

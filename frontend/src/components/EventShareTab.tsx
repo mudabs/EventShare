@@ -14,7 +14,7 @@ export function EventShareTab({ eventId }: { eventId: string }) {
   });
 
   if (isLoading) {
-    return <div className="h-72 animate-pulse rounded-lg bg-slate-100" />;
+    return <div className="h-72 animate-pulse rounded-2xl bg-blush" />;
   }
   if (isError || !data) {
     return <p className="text-red-600">Could not load this event.</p>;

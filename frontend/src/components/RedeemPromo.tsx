@@ -37,16 +37,16 @@ export function RedeemPromo() {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto mt-8 max-w-sm text-center">
-      <label className="block text-sm font-medium text-slate-700">Have a promo code?</label>
+    <form onSubmit={submit} className="mx-auto mt-10 max-w-sm text-center">
+      <label className="label">Have a promo code?</label>
       <div className="mt-2 flex gap-2">
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="Enter code"
-          className="flex-1 rounded-md border border-slate-300 px-3 py-2 uppercase focus:border-brand focus:outline-none"
+          className="input flex-1 uppercase tracking-wide"
         />
-        <button type="submit" disabled={busy} className="rounded-md bg-slate-800 px-4 py-2 font-medium text-white hover:bg-slate-700 disabled:opacity-60">
+        <button type="submit" disabled={busy} className="shrink-0 rounded-xl bg-wine px-4 py-2.5 font-medium text-white transition-colors hover:bg-wine/90 disabled:opacity-60">
           {busy ? '...' : 'Apply'}
         </button>
       </div>

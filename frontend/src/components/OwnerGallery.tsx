@@ -30,8 +30,8 @@ function Tile({
   onSetCover: (id: string) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
-      <div className="aspect-square bg-slate-100">
+    <div className="card overflow-hidden">
+      <div className="aspect-square bg-blush">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={item.thumbnailUrl ?? item.originalUrl} alt={item.originalFilename ?? 'media'} loading="lazy" className="h-full w-full object-cover" />
       </div>
@@ -40,7 +40,7 @@ function Tile({
           <button
             key={a.action}
             onClick={() => onAction(item.id, a.action)}
-            className={`rounded px-2 py-1 text-[11px] font-medium ${a.danger ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+            className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${a.danger ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-blush text-wine hover:bg-brand/10'}`}
           >
             {a.label}
           </button>
@@ -48,7 +48,7 @@ function Tile({
         {state === 'VISIBLE' && (
           <button
             onClick={() => onSetCover(item.id)}
-            className="rounded bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100"
+            className="rounded-full bg-brand/10 px-2.5 py-1 text-[11px] font-medium text-brand hover:bg-brand/20"
           >
             Set cover
           </button>
@@ -99,18 +99,18 @@ export function OwnerGallery({ eventId }: { eventId: string }) {
           <button
             key={s}
             onClick={() => setState(s)}
-            className={`rounded-md px-3 py-1 text-xs font-medium ${state === s ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${state === s ? 'bg-brand text-white' : 'bg-blush text-ink/60 hover:bg-brand/10'}`}
           >
             {s.charAt(0) + s.slice(1).toLowerCase()}
           </button>
         ))}
       </div>
 
-      {notice && <p className="rounded bg-green-50 px-3 py-2 text-sm text-green-700">{notice}</p>}
-      {isLoading && <p className="py-8 text-center text-slate-500">Loading...</p>}
+      {notice && <p className="rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700">{notice}</p>}
+      {isLoading && <p className="py-8 text-center text-ink/50">Loading...</p>}
       {isError && <p className="py-8 text-center text-red-600">Could not load media.</p>}
       {!isLoading && items.length === 0 && (
-        <p className="py-8 text-center text-slate-500">Nothing in {state.toLowerCase()}.</p>
+        <p className="py-8 text-center text-ink/50">Nothing in {state.toLowerCase()}.</p>
       )}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">

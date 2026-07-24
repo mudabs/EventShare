@@ -28,20 +28,20 @@ export function SubscriptionBanner() {
   const isFree = data.effectivePlan.code === 'FREE';
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
+    <div className="card flex items-center justify-between px-4 py-3">
       <div className="text-sm">
-        <span className="text-slate-500">Plan:</span>{' '}
-        <span className="font-semibold text-slate-900">{data.planName}</span>
+        <span className="text-ink/50">Plan:</span>{' '}
+        <span className="font-semibold text-wine">{data.planName}</span>
         {data.whitelisted && (
           <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">VIP</span>
         )}
       </div>
       {isFree ? (
-        <Link href="/pricing" className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">
+        <Link href="/pricing" className="btn-primary px-4 py-1.5 text-sm">
           Upgrade
         </Link>
       ) : (
-        <button onClick={manageBilling} className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+        <button onClick={manageBilling} className="btn-outline px-4 py-1.5 text-sm">
           Manage billing
         </button>
       )}

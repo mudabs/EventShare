@@ -3,6 +3,7 @@ import { Header } from '@/components/Header';
 import { JoinByCodeForm } from '@/components/JoinByCodeForm';
 import { PhotoSlot } from '@/components/PhotoSlot';
 import { HeroScene, StepCreate, StepShare, StepGallery } from '@/components/illustrations';
+import { galleryPreview } from '@/lib/stockImages';
 
 const STEPS = [
   {
@@ -20,17 +21,6 @@ const STEPS = [
     title: 'Watch the gallery fill',
     body: 'Every photo and video lands in one beautiful shared album.'
   }
-];
-
-// Drop real photos at these paths (see public/images/README.md) and they appear
-// automatically; until then, on-brand placeholders keep the layout alive.
-const GALLERY_PREVIEW = [
-  { src: '/images/gallery-1.jpg', ratio: 'aspect-[3/4]' },
-  { src: '/images/gallery-2.jpg', ratio: 'aspect-square' },
-  { src: '/images/gallery-3.jpg', ratio: 'aspect-square' },
-  { src: '/images/gallery-4.jpg', ratio: 'aspect-[3/4]' },
-  { src: '/images/gallery-5.jpg', ratio: 'aspect-square' },
-  { src: '/images/gallery-6.jpg', ratio: 'aspect-square' }
 ];
 
 export default function HomePage() {
@@ -87,7 +77,7 @@ export default function HomePage() {
             <h2 className="mt-1 text-3xl font-semibold">Memories from every guest</h2>
           </div>
           <div className="mt-8 columns-2 gap-4 sm:columns-3 [&>*]:mb-4">
-            {GALLERY_PREVIEW.map((p, i) => (
+            {galleryPreview.map((p, i) => (
               <PhotoSlot key={i} src={p.src} ratio={p.ratio} alt="Event photo" className="break-inside-avoid" />
             ))}
           </div>

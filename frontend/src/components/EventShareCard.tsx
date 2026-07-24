@@ -15,40 +15,36 @@ export function EventShareCard({ event }: { event: EventResponse }) {
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 text-center">
-      <h2 className="text-xl font-semibold">{event.name} is ready</h2>
-      <p className="text-sm text-slate-600">
+    <div className="card space-y-4 p-6 text-center">
+      <div>
+        <p className="script text-2xl">Your event is ready</p>
+        <h2 className="text-2xl font-semibold">{event.name}</h2>
+      </div>
+      <p className="text-sm text-ink/70">
         Share this code or QR with your guests. No app or account needed to join.
       </p>
 
       <div className="flex justify-center">
-        <div className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-slate-200">
-          <QRCodeSVG value={event.inviteUrl} size={176} />
+        <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-brand/10">
+          <QRCodeSVG value={event.inviteUrl} size={176} fgColor="#831843" />
         </div>
       </div>
 
-      <div className="text-2xl font-mono font-bold tracking-widest text-brand">
+      <div className="font-mono text-2xl font-bold tracking-[0.3em] text-brand">
         {event.inviteCode}
       </div>
 
       <div className="flex items-center gap-2">
-        <input
-          readOnly
-          value={event.inviteUrl}
-          className="flex-1 truncate rounded-md border border-slate-300 px-3 py-2 text-sm"
-        />
+        <input readOnly value={event.inviteUrl} className="input flex-1 truncate text-sm" />
         <button
           onClick={copyLink}
-          className="rounded-md bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="rounded-xl bg-wine px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-wine/90"
         >
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
 
-      <Link
-        href={`/e/${event.inviteCode}`}
-        className="inline-block rounded-md bg-brand px-4 py-2 font-medium text-white hover:bg-brand-dark"
-      >
+      <Link href={`/e/${event.inviteCode}`} className="btn-primary inline-flex">
         Open shared gallery
       </Link>
     </div>

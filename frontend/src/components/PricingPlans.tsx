@@ -42,7 +42,7 @@ export function PricingPlans() {
   }
 
   if (!plans) {
-    return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-80 animate-pulse rounded-lg bg-slate-100" />)}</div>;
+    return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-80 animate-pulse rounded-2xl bg-blush" />)}</div>;
   }
 
   return (
@@ -52,10 +52,13 @@ export function PricingPlans() {
         {plans.map((plan) => {
           const current = sub?.effectivePlan.code === plan.code;
           return (
-            <div key={plan.code} className="flex flex-col rounded-lg border border-slate-200 bg-white p-5">
-              <h3 className="text-lg font-bold">{plan.name}</h3>
-              <div className="mt-1 text-2xl font-extrabold text-brand">{formatPrice(plan)}</div>
-              <ul className="mt-4 flex-1 space-y-1 text-sm text-slate-600">
+            <div
+              key={plan.code}
+              className={`card flex flex-col p-6 transition ${current ? 'ring-2 ring-brand' : 'hover:-translate-y-1 hover:shadow-soft'}`}
+            >
+              <h3 className="text-xl font-semibold">{plan.name}</h3>
+              <div className="mt-1 font-serif text-3xl font-semibold text-brand">{formatPrice(plan)}</div>
+              <ul className="mt-4 flex-1 space-y-1.5 text-sm text-ink/70">
                 <li>{formatLimit(plan.maxEvents)} events</li>
                 <li>{formatLimit(plan.maxGuestsPerEvent)} guests / event</li>
                 <li>{formatLimit(plan.maxPhotosPerEvent)} photos / event</li>
@@ -67,10 +70,10 @@ export function PricingPlans() {
               <button
                 onClick={() => choose(plan)}
                 disabled={current || busy === plan.code}
-                className={`mt-4 rounded-md px-4 py-2 text-sm font-medium ${
+                className={`mt-5 rounded-full px-4 py-2.5 text-sm font-medium transition-all ${
                   current
-                    ? 'cursor-default bg-slate-100 text-slate-500'
-                    : 'bg-brand text-white hover:bg-brand-dark'
+                    ? 'cursor-default bg-blush text-ink/40'
+                    : 'bg-brand text-white shadow-soft hover:bg-brand-dark hover:-translate-y-0.5'
                 } disabled:opacity-60`}
               >
                 {current ? 'Current plan' : busy === plan.code ? 'Redirecting...' : plan.priceCents === 0 ? 'Included' : 'Choose'}

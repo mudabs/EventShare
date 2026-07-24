@@ -29,21 +29,17 @@ export function JoinPrompt({ code, onJoined }: { code: string; onJoined: () => v
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border border-slate-200 bg-white p-5">
-      <p className="text-sm text-slate-600">Add your name to start sharing photos and videos.</p>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <p className="text-sm text-ink/70">Add your name to start sharing photos and videos.</p>
       <div className="flex gap-2">
         <input
           value={name}
           maxLength={120}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name"
-          className="flex-1 rounded-md border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+          className="input flex-1"
         />
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-md bg-brand px-4 py-2 font-medium text-white hover:bg-brand-dark disabled:opacity-60"
-        >
+        <button type="submit" disabled={busy} className="btn-primary shrink-0">
           {busy ? 'Joining…' : 'Join'}
         </button>
       </div>

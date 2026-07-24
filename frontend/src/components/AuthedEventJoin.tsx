@@ -39,15 +39,11 @@ export function AuthedEventJoin({ code, onJoined }: { code: string; onJoined: ()
   }
 
   return (
-    <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-5">
-      <p className="text-sm text-slate-600">
+    <div className="card space-y-3 p-6 text-center">
+      <p className="text-sm text-ink/70">
         Join to start sharing photos and videos. This event will be saved to your account.
       </p>
-      <button
-        onClick={join}
-        disabled={busy}
-        className="w-full rounded-md bg-brand px-4 py-3 font-medium text-white hover:bg-brand-dark disabled:opacity-60"
-      >
+      <button onClick={join} disabled={busy} className="btn-primary w-full py-3">
         {busy ? 'Joining...' : 'Join and save to My Events'}
       </button>
       {error && <p className="text-sm text-red-600">{error}</p>}

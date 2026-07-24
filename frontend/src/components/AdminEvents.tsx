@@ -26,25 +26,25 @@ export function AdminEvents() {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search by event name"
-        className="w-full max-w-sm rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
+        className="input max-w-sm text-sm"
       />
       {isLoading ? (
-        <p className="text-slate-500">Loading...</p>
+        <p className="text-ink/50">Loading...</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="card overflow-x-auto p-2">
           <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase text-slate-500">
+            <thead className="text-xs uppercase text-ink/50">
               <tr><th className="py-2">Event</th><th>Type</th><th>Status</th><th>Media</th><th></th></tr>
             </thead>
             <tbody>
               {events.map((ev) => (
-                <tr key={ev.id} className="border-t border-slate-100">
-                  <td className="py-2 font-medium">{ev.name}</td>
+                <tr key={ev.id} className="border-t border-brand/10">
+                  <td className="py-2 font-medium text-wine">{ev.name}</td>
                   <td>{ev.eventType}</td>
                   <td>{ev.status}</td>
                   <td>{ev.mediaCount}</td>
                   <td className="space-x-2 whitespace-nowrap py-2 text-right text-xs">
-                    <button onClick={async () => { await adminArchiveEvent((await getToken()) ?? '', ev.id); refresh(); }} className="rounded bg-slate-100 px-2 py-1 hover:bg-slate-200">Archive</button>
+                    <button onClick={async () => { await adminArchiveEvent((await getToken()) ?? '', ev.id); refresh(); }} className="rounded-full bg-blush px-2.5 py-1 text-wine hover:bg-brand/10">Archive</button>
                     <button onClick={async () => { if (!window.confirm('Remove this event?')) return; await adminRemoveEvent((await getToken()) ?? '', ev.id); refresh(); }} className="rounded bg-red-50 px-2 py-1 text-red-700 hover:bg-red-100">Remove</button>
                   </td>
                 </tr>

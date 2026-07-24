@@ -42,30 +42,30 @@ export function AdminPromo() {
 
   return (
     <div className="space-y-5">
-      <form onSubmit={create} className="grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-3">
-        <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="CODE" required className="rounded border border-slate-300 px-2 py-1 text-sm uppercase" />
-        <select value={type} onChange={(e) => setType(e.target.value)} className="rounded border border-slate-300 px-2 py-1 text-sm">
+      <form onSubmit={create} className="card grid grid-cols-2 gap-2 p-4 sm:grid-cols-3">
+        <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="CODE" required className="input text-sm uppercase" />
+        <select value={type} onChange={(e) => setType(e.target.value)} className="input text-sm">
           {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-        <input value={grantsPlanCode} onChange={(e) => setGrantsPlanCode(e.target.value)} placeholder="Grants plan" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-        <input value={durationDays} onChange={(e) => setDurationDays(e.target.value)} placeholder="Days" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-        <input value={maxRedemptions} onChange={(e) => setMaxRedemptions(e.target.value)} placeholder="Max uses" className="rounded border border-slate-300 px-2 py-1 text-sm" />
-        <button type="submit" className="rounded bg-brand px-3 py-1 text-sm font-medium text-white hover:bg-brand-dark">Create</button>
+        <input value={grantsPlanCode} onChange={(e) => setGrantsPlanCode(e.target.value)} placeholder="Grants plan" className="input text-sm" />
+        <input value={durationDays} onChange={(e) => setDurationDays(e.target.value)} placeholder="Days" className="input text-sm" />
+        <input value={maxRedemptions} onChange={(e) => setMaxRedemptions(e.target.value)} placeholder="Max uses" className="input text-sm" />
+        <button type="submit" className="btn-primary px-4 py-1.5 text-sm">Create</button>
       </form>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="overflow-x-auto">
+      <div className="card overflow-x-auto p-2">
         <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase text-slate-500"><tr><th className="py-2">Code</th><th>Type</th><th>Used</th><th>Active</th><th></th></tr></thead>
+          <thead className="text-xs uppercase text-ink/50"><tr><th className="py-2">Code</th><th>Type</th><th>Used</th><th>Active</th><th></th></tr></thead>
           <tbody>
             {codes.map((c) => (
-              <tr key={c.id} className="border-t border-slate-100">
+              <tr key={c.id} className="border-t border-brand/10">
                 <td className="py-2 font-mono">{c.code}</td>
                 <td>{c.type}</td>
                 <td>{c.redemptionsUsed}{c.maxRedemptions ? `/${c.maxRedemptions}` : ''}</td>
                 <td>{c.active ? 'Yes' : 'No'}</td>
                 <td className="py-2 text-right">
-                  {c.active && <button onClick={async () => { await adminDisablePromo((await getToken()) ?? '', c.id); queryClient.invalidateQueries({ queryKey: ['adminPromo'] }); }} className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200">Disable</button>}
+                  {c.active && <button onClick={async () => { await adminDisablePromo((await getToken()) ?? '', c.id); queryClient.invalidateQueries({ queryKey: ['adminPromo'] }); }} className="rounded-full bg-blush px-2.5 py-1 text-xs text-wine hover:bg-brand/10">Disable</button>}
                 </td>
               </tr>
             ))}

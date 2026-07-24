@@ -33,18 +33,18 @@ export default function AdminPage() {
       <Header />
       <main className="mx-auto max-w-5xl px-4 py-6">
         {isLoading ? (
-          <p className="py-12 text-center text-slate-500">Loading...</p>
+          <p className="py-12 text-center text-ink/50">Loading...</p>
         ) : profile?.role !== 'ADMIN' ? (
-          <p className="py-12 text-center text-slate-600">You do not have administrator access.</p>
+          <p className="py-12 text-center text-ink/70">You do not have administrator access.</p>
         ) : (
           <>
-            <h1 className="mb-4 text-2xl font-bold">Platform admin</h1>
-            <div className="mb-5 flex flex-wrap gap-2 border-b border-slate-200">
+            <h1 className="mb-4 text-3xl font-semibold">Platform admin</h1>
+            <div className="mb-5 flex flex-wrap gap-2 border-b border-brand/15">
               {TABS.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
-                  className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${tab === t.id ? 'border-brand text-brand' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${tab === t.id ? 'border-brand text-brand' : 'border-transparent text-ink/50 hover:text-brand'}`}
                 >
                   {t.label}
                 </button>

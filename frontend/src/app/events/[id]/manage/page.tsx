@@ -27,19 +27,19 @@ export default function ManageEventPage() {
     <div className="min-h-screen">
       <Header />
       <main className="mx-auto max-w-4xl px-4 py-6">
-        <nav className="mb-4 text-sm text-slate-500">
+        <nav className="mb-4 text-sm text-ink/50">
           <Link href="/dashboard" className="hover:text-brand">My Events</Link>
           <span className="px-1">/</span>
-          <span className="text-slate-700">Manage</span>
+          <span className="text-wine">Manage</span>
         </nav>
 
-        <div className="mb-5 flex flex-wrap gap-2 border-b border-slate-200">
+        <div className="mb-5 flex flex-wrap gap-2 border-b border-brand/15">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
-                tab === t.id ? 'border-brand text-brand' : 'border-transparent text-slate-500 hover:text-slate-700'
+              className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                tab === t.id ? 'border-brand text-brand' : 'border-transparent text-ink/50 hover:text-brand'
               }`}
             >
               {t.label}
