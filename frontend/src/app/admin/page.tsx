@@ -5,19 +5,21 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AdminAnalytics } from '@/components/AdminAnalytics';
 import { AdminEvents } from '@/components/AdminEvents';
+import { AdminPerformance } from '@/components/AdminPerformance';
 import { AdminPromo } from '@/components/AdminPromo';
 import { AdminUsers } from '@/components/AdminUsers';
 import { AdminWhitelist } from '@/components/AdminWhitelist';
 import { Header } from '@/components/Header';
 import { fetchProfile } from '@/lib/api';
 
-type Tab = 'users' | 'events' | 'promo' | 'whitelist' | 'analytics';
+type Tab = 'users' | 'events' | 'promo' | 'whitelist' | 'analytics' | 'performance';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'users', label: 'Users' },
   { id: 'events', label: 'Events' },
   { id: 'promo', label: 'Promo' },
   { id: 'whitelist', label: 'Whitelist' },
-  { id: 'analytics', label: 'Analytics' }
+  { id: 'analytics', label: 'Analytics' },
+  { id: 'performance', label: 'Performance' }
 ];
 
 export default function AdminPage() {
@@ -55,6 +57,7 @@ export default function AdminPage() {
             {tab === 'promo' && <AdminPromo />}
             {tab === 'whitelist' && <AdminWhitelist />}
             {tab === 'analytics' && <AdminAnalytics />}
+            {tab === 'performance' && <AdminPerformance />}
           </>
         )}
       </main>

@@ -189,5 +189,23 @@ export interface AdminUser { id: string; email: string; displayName: string; rol
 export interface AdminEvent { id: string; name: string; eventType: string; status: string; hostId: string; mediaCount: number; createdAt: string; }
 export interface MonthCount { month: string; count: number; }
 export interface PlatformStats { totalUsers: number; totalEvents: number; totalUploads: number; totalStorageBytes: number; monthlyGrowth: MonthCount[]; }
+export interface EndpointStat { uri: string; count: number; avgMs: number; errors: number; }
+export interface AdminPerformance {
+  uptimeSeconds: number;
+  cpuUsage: number;
+  heapUsedBytes: number;
+  heapMaxBytes: number;
+  nonHeapUsedBytes: number;
+  liveThreads: number;
+  totalRequests: number;
+  serverErrors: number;
+  avgLatencyMs: number;
+  dbActive: number;
+  dbIdle: number;
+  dbMax: number;
+  mediaProcessed: number;
+  mediaFailed: number;
+  topEndpoints: EndpointStat[];
+}
 export interface PromoCode { id: string; code: string; type: string; valueNumeric: number | null; grantsPlanCode: string | null; durationDays: number | null; maxRedemptions: number | null; redemptionsUsed: number; expiresAt: string | null; active: boolean; }
 export interface WhitelistEntry { id: string; email: string; note: string | null; active: boolean; createdAt: string; }

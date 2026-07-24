@@ -1,6 +1,6 @@
 import type {
   CompleteUploadRequest, CreateEventRequest, EventResponse, GalleryPage,
-  AdminEvent, AdminUser, EventSettings, JoinResponse, MediaItem, MemberView, ModerationState, MyEventCard, OwnerDashboard, Plan, PlatformStats, Profile, PromoCode, PublicEvent, Subscription, UserDashboard, WhitelistEntry, UploadUrlRequest, UploadUrlResponse
+  AdminEvent, AdminPerformance, AdminUser, EventSettings, JoinResponse, MediaItem, MemberView, ModerationState, MyEventCard, OwnerDashboard, Plan, PlatformStats, Profile, PromoCode, PublicEvent, Subscription, UserDashboard, WhitelistEntry, UploadUrlRequest, UploadUrlResponse
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || '/api';
@@ -213,6 +213,8 @@ export const adminRemoveEvent = (token: string, id: string) =>
   request<void>(`/admin/events/${id}`, { method: 'DELETE', token });
 
 export const adminStats = (token: string) => request<PlatformStats>(`/admin/analytics`, { token });
+
+export const adminPerformance = (token: string) => request<AdminPerformance>(`/admin/performance`, { token });
 
 export const adminPromoCodes = (token: string) => request<PromoCode[]>(`/admin/promo-codes`, { token });
 export const adminCreatePromo = (token: string, body: Record<string, unknown>) =>
