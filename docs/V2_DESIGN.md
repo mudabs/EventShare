@@ -15,7 +15,7 @@ Three decisions were confirmed before drafting:
 2. Plan scope: per-user subscription. One active subscription per account governs all of that
    user's events.
 3. Admin role: a database role flag (users.role = ADMIN), with the first admin
-   (mudaburamunashe@gmail.com) granted at provisioning time.
+   (admin@example.com) granted at provisioning time.
 
 Reconciliations and assumptions worth your eye before approval:
 

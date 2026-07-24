@@ -31,7 +31,7 @@ In production, host Nginx terminates TLS and forwards to the app's container Ngi
 1. SSH into the server:
 
 ```bash
-ssh munashe@66.179.81.222
+ssh <user>@<vps-ip>
 ```
 
 2. Go to the repo root on the VPS:
@@ -100,7 +100,7 @@ docker compose logs -f frontend
 When you want to deploy a new version:
 
 ```bash
-ssh munashe@66.179.81.222
+ssh <user>@<vps-ip>
 cd ~/apps/eventshare
 git pull
 bash scripts/deploy-prod.sh

@@ -12,14 +12,14 @@ From the folder that contains the EventShare directory:
 ```powershell
 cd C:\Users\mudab\Downloads\Projects
 tar -a -c -f eventshare.zip --exclude="EventShare/frontend/node_modules" --exclude="EventShare/frontend/.next" --exclude="EventShare/backend/target" --exclude="EventShare/worker/target" EventShare
-scp eventshare.zip munashe@66.179.81.222:~/
-scp EventShare/scripts/vps-bootstrap.sh munashe@66.179.81.222:~/
+scp eventshare.zip <user>@<vps-ip>:~/
+scp EventShare/scripts/vps-bootstrap.sh <user>@<vps-ip>:~/
 ```
 
 ## 2. Install Docker on the VPS (SSH in, run once)
 
 ```bash
-ssh munashe@66.179.81.222
+ssh <user>@<vps-ip>
 bash vps-bootstrap.sh
 newgrp docker          # apply docker group without re-login
 unzip -o eventshare.zip
@@ -31,7 +31,7 @@ cd EventShare
 Your transferred .env still has localhost URLs. Rewrite them to the VPS IP in one go:
 
 ```bash
-sed -i 's#http://localhost#http://66.179.81.222#g' .env
+sed -i 's#http://localhost#http://<vps-ip>#g' .env
 grep -E 'APP_BASE_URL|NEXT_PUBLIC|CORS_ALLOWED|BILLING' .env   # verify
 ```
 
@@ -40,8 +40,8 @@ must match; RABBITMQ_DEFAULT_PASS + SPRING_RABBITMQ_PASSWORD must match; GRAFANA
 
 ## 4. Allow the new origin in Cloudflare R2 and Clerk
 
-- R2 bucket -> Settings -> CORS Policy: add "http://66.179.81.222" to AllowedOrigins.
-- Clerk dashboard -> your instance -> add http://66.179.81.222 as an allowed origin/redirect.
+- R2 bucket -> Settings -> CORS Policy: add "http://<vps-ip>" to AllowedOrigins.
+- Clerk dashboard -> your instance -> add http://<vps-ip> as an allowed origin/redirect.
 
 ## 5. Build and start
 
@@ -52,7 +52,7 @@ docker compose logs --tail=60 api
 ```
 
 First build takes several minutes. When api/postgres/rabbitmq are healthy, open
-http://66.179.81.222 in a browser.
+http://<vps-ip> in a browser.
 
 ## 6. Make yourself admin (same as local)
 
@@ -73,7 +73,7 @@ docker compose restart nginx
 
 Browsers only allow camera/mic on https (or localhost). A bare IP cannot get a public TLS
 certificate. To enable HTTPS:
-1. Point a domain's DNS A record at 66.179.81.222.
+1. Point a domain's DNS A record at <vps-ip>.
 2. Issue a cert with certbot (or Caddy) and put fullchain.pem/privkey.pem in infra/nginx/certs.
 3. Enable the commented 443 server block in infra/nginx/conf.d (or switch to Caddy for auto-TLS).
 4. Update the .env URLs to https://yourdomain and rebuild the frontend.
