@@ -1,6 +1,6 @@
 import type {
   CompleteUploadRequest, CreateEventRequest, EventResponse, GalleryPage,
-  AdminEvent, AdminUser, EventSettings, JoinResponse, MediaItem, ModerationState, MyEventCard, OwnerDashboard, Plan, PlatformStats, Profile, PromoCode, PublicEvent, Subscription, UserDashboard, WhitelistEntry, UploadUrlRequest, UploadUrlResponse
+  AdminEvent, AdminUser, EventSettings, JoinResponse, MediaItem, MemberView, ModerationState, MyEventCard, OwnerDashboard, Plan, PlatformStats, Profile, PromoCode, PublicEvent, Subscription, UserDashboard, WhitelistEntry, UploadUrlRequest, UploadUrlResponse
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || '/api';
@@ -120,6 +120,17 @@ export const fetchUserDashboard = (token: string) =>
 
 export const fetchOwnerDashboard = (token: string, eventId: string) =>
   request<OwnerDashboard>(`/events/${encodeURIComponent(eventId)}/dashboard`, { token });
+
+// ---- Members / guests (owner) ----
+
+export const fetchEventMembers = (token: string, eventId: string) =>
+  request<MemberView[]>(`/events/${encodeURIComponent(eventId)}/members`, { token });
+
+export const removeEventMember = (token: string, eventId: string, membershipId: string) =>
+  request<void>(`/events/${encodeURIComponent(eventId)}/members/${encodeURIComponent(membershipId)}`, {
+    method: 'DELETE',
+    token
+  });
 
 // ---- Moderation + settings ----
 

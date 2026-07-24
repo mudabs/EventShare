@@ -27,11 +27,14 @@ public class CurrentUserService {
     private static final Duration LAST_SEEN_THROTTLE = Duration.ofMinutes(5);
 
     private final UserRepository users;
+    private final ClerkUserClient clerk;
     private final Set<String> adminEmails;
 
     public CurrentUserService(UserRepository users,
+                              ClerkUserClient clerk,
                               @Value("${eventshare.admin-emails:}") String adminEmailsRaw) {
         this.users = users;
+        this.clerk = clerk;
         this.adminEmails = Arrays.stream(adminEmailsRaw.split(","))
                 .map(s -> s.trim().toLowerCase())
                 .filter(s -> !s.isBlank())
@@ -53,13 +56,24 @@ public class CurrentUserService {
     private User createFromJwt(String clerkUserId, Jwt jwt) {
         User user = new User();
         user.setClerkUserId(clerkUserId);
+
         String email = stringClaim(jwt, "email");
+        String name = firstNonBlank(stringClaim(jwt, "name"), stringClaim(jwt, "username"));
+        String avatar = stringClaim(jwt, "picture");
+
+        // Clerk's default session token usually omits email/name; look them up once.
+        if (email == null || name == null) {
+            var profile = clerk.fetchProfile(clerkUserId).orElse(null);
+            if (profile != null) {
+                if (email == null) email = profile.email();
+                if (name == null) name = profile.fullName();
+                if (avatar == null) avatar = profile.imageUrl();
+            }
+        }
+
         user.setEmail(email);
-        user.setDisplayName(firstNonBlank(
-                stringClaim(jwt, "name"),
-                stringClaim(jwt, "username"),
-                email));
-        user.setAvatarUrl(stringClaim(jwt, "picture"));
+        user.setDisplayName(firstNonBlank(name, email));
+        user.setAvatarUrl(avatar);
         user.setRole(isAdminEmail(email) ? Role.ADMIN : Role.HOST);
         user.setLastSeenAt(Instant.now());
         try {
@@ -71,6 +85,19 @@ public class CurrentUserService {
 
     private void reconcile(User user) {
         boolean dirty = false;
+
+        // Backfill email for users created before it was captured (needed for admin grant).
+        if (user.getEmail() == null && clerk.isConfigured()) {
+            var profile = clerk.fetchProfile(user.getClerkUserId()).orElse(null);
+            if (profile != null && profile.email() != null) {
+                user.setEmail(profile.email());
+                if (user.getDisplayName() == null) {
+                    user.setDisplayName(firstNonBlank(profile.fullName(), profile.email()));
+                }
+                dirty = true;
+            }
+        }
+
         if (isAdminEmail(user.getEmail()) && user.getRole() != Role.ADMIN) {
             user.setRole(Role.ADMIN);
             dirty = true;

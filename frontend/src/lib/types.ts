@@ -92,6 +92,16 @@ export interface CreateEventRequest {
   autoApprove?: boolean;
 }
 
+export interface MemberView {
+  membershipId: string;
+  userId: string | null;
+  displayName: string | null;
+  role: 'HOST' | 'MODERATOR' | 'GUEST';
+  status: 'ACTIVE' | 'LEFT' | 'REMOVED';
+  joinedAt: string | null;
+  lastActivityAt: string | null;
+}
+
 export interface MyEventCard {
   id: string;
   name: string;

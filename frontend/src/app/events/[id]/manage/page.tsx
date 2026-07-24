@@ -3,17 +3,19 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
+import { EventGuests } from '@/components/EventGuests';
 import { EventSettingsPanel } from '@/components/EventSettingsPanel';
 import { EventShareTab } from '@/components/EventShareTab';
 import { Header } from '@/components/Header';
 import { OwnerDashboard } from '@/components/OwnerDashboard';
 import { OwnerGallery } from '@/components/OwnerGallery';
 
-type Tab = 'share' | 'analytics' | 'gallery' | 'settings';
+type Tab = 'share' | 'analytics' | 'guests' | 'gallery' | 'settings';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'share', label: 'Share' },
   { id: 'analytics', label: 'Analytics' },
+  { id: 'guests', label: 'Guests' },
   { id: 'gallery', label: 'Gallery' },
   { id: 'settings', label: 'Settings' }
 ];
@@ -49,6 +51,7 @@ export default function ManageEventPage() {
 
         {tab === 'share' && <EventShareTab eventId={eventId} />}
         {tab === 'analytics' && <OwnerDashboard eventId={eventId} />}
+        {tab === 'guests' && <EventGuests eventId={eventId} />}
         {tab === 'gallery' && <OwnerGallery eventId={eventId} />}
         {tab === 'settings' && <EventSettingsPanel eventId={eventId} />}
       </main>

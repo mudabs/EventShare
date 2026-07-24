@@ -23,19 +23,31 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 
 function ActivityChart({ data }: { data: DayCount[] }) {
   const max = Math.max(1, ...data.map((d) => d.count));
+  const total = data.reduce((sum, d) => sum + d.count, 0);
+
   return (
     <div className="card p-4">
-      <div className="mb-2 text-sm font-medium text-wine/80">Upload activity (14 days)</div>
-      <div className="flex h-32 items-end gap-1">
-        {data.map((d) => (
-          <div key={d.date} className="flex flex-1 flex-col items-center justify-end" title={`${d.date}: ${d.count}`}>
-            <div
-              className="w-full rounded-t bg-brand"
-              style={{ height: `${(d.count / max) * 100}%`, minHeight: d.count > 0 ? '4px' : '0' }}
-            />
-          </div>
-        ))}
+      <div className="mb-3 flex items-baseline justify-between">
+        <span className="text-sm font-medium text-wine/80">Upload activity (14 days)</span>
+        <span className="text-xs text-ink/50">{total} total</span>
       </div>
+      {total === 0 ? (
+        <p className="py-8 text-center text-sm text-ink/50">No uploads in the last 14 days.</p>
+      ) : (
+        <div className="flex h-40 items-stretch gap-1">
+          {data.map((d, i) => (
+            <div key={d.date} className="flex flex-1 flex-col items-center gap-1" title={`${d.date}: ${d.count}`}>
+              <div className="flex w-full flex-1 items-end">
+                <div
+                  className="w-full rounded-t bg-brand transition-all"
+                  style={{ height: `${(d.count / max) * 100}%`, minHeight: d.count > 0 ? '3px' : '0' }}
+                />
+              </div>
+              <span className="text-[9px] text-ink/40">{i % 2 === 0 ? d.date.slice(8) : ''}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

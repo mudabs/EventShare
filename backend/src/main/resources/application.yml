@@ -88,6 +88,9 @@ eventshare:
   auth:
     clerk-issuer: ${CLERK_ISSUER:}
     clerk-audience: ${CLERK_AUDIENCE:}
+    # Clerk Backend API key. Used to look up email/name when the session token omits
+    # them (needed for ADMIN_EMAILS auto-grant). No-op if left blank.
+    clerk-secret-key: ${CLERK_SECRET_KEY:}
   r2:
     endpoint: ${R2_ENDPOINT:http://localhost:9000}
     region: ${R2_REGION:auto}

@@ -31,11 +31,13 @@ export function AdminAnalytics() {
       </div>
       <div className="card p-4">
         <div className="mb-2 text-sm font-medium text-wine/80">New users (6 months)</div>
-        <div className="flex h-32 items-end gap-2">
+        <div className="flex h-40 items-stretch gap-2">
           {data.monthlyGrowth.map((m) => (
-            <div key={m.month} className="flex flex-1 flex-col items-center justify-end" title={`${m.month}: ${m.count}`}>
-              <div className="w-full rounded-t bg-brand" style={{ height: `${(m.count / max) * 100}%`, minHeight: m.count > 0 ? '4px' : '0' }} />
-              <span className="mt-1 text-[10px] text-ink/40">{m.month.slice(5)}</span>
+            <div key={m.month} className="flex flex-1 flex-col items-center gap-1" title={`${m.month}: ${m.count}`}>
+              <div className="flex w-full flex-1 items-end">
+                <div className="w-full rounded-t bg-brand transition-all" style={{ height: `${(m.count / max) * 100}%`, minHeight: m.count > 0 ? '3px' : '0' }} />
+              </div>
+              <span className="text-[10px] text-ink/40">{m.month.slice(5)}</span>
             </div>
           ))}
         </div>
