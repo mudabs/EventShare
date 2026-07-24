@@ -10,6 +10,24 @@ jobs:
     name: Deploy to VPS
     runs-on: ubuntu-latest
     steps:
+      - name: Check required secrets
+        run: |
+          missing=()
+          [ -z "$VPS_HOST" ]    && missing+=("VPS_HOST")
+          [ -z "$VPS_USER" ]    && missing+=("VPS_USER")
+          [ -z "$VPS_SSH_KEY" ] && missing+=("VPS_SSH_KEY")
+          [ -z "$VPS_APP_DIR" ] && missing+=("VPS_APP_DIR")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Required secrets not configured: ${missing[*]}"
+            echo "Add these secrets in: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+        env:
+          VPS_HOST:    ${{ secrets.VPS_HOST }}
+          VPS_USER:    ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -21,5 +39,5 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
-            cd ${{ secrets.VPS_APP_DIR }}
+            cd "${{ secrets.VPS_APP_DIR }}"
             bash scripts/deploy-prod.sh
