@@ -56,3 +56,7 @@ data/
 
 # Personal deployment reference (not for the repo)
 DEPLOYMENT_MANUAL.md
+
+# Local credential inventories and secret material (never commit)
+private/
+DEPLOYMENT_SECRETS.local.md
