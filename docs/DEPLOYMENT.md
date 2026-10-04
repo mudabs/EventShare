@@ -1,5 +1,9 @@
 # Deployment Guide
 
+For the complete reproducible cutover and CD procedure, see
+[docs/DEPLOYMENT_RUNBOOK.md](DEPLOYMENT_RUNBOOK.md). This page remains the shorter reference
+guide.
+
 Target: the tunneled home server `vps01`, reached interactively with the local SSH alias
 `myvps`. Docker Compose runs the application on that host. The IONOS VPS is no longer the
 application deployment target; it may remain a public reverse-proxy gateway over Tailscale.

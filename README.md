@@ -175,6 +175,7 @@ docs/DECISIONS.md      Architecture decision records (ADRs)
 docs/API.md            REST endpoint reference and examples
 docs/ENVIRONMENT.md    Every environment variable
 docs/DEPLOYMENT.md     VPS deployment, TLS, CI/CD secrets
+docs/DEPLOYMENT_RUNBOOK.md  Reproducible vps01 cutover and continuous deployment runbook
 docs/OPERATIONS.md     Monitoring, backups, disaster recovery, scaling, runbooks
 docs/ONBOARDING.md     Developer setup and conventions
 ```
