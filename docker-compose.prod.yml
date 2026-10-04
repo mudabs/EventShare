@@ -1,1 +1,6 @@
-services: {}
+services:
+  nginx:
+    # The public gateway reaches vps01 over Tailscale. Keep the app edge off the
+    # LAN/public interfaces; override EVENTSHARE_TAILSCALE_IP if the tunnel IP changes.
+    ports:
+      - "${EVENTSHARE_TAILSCALE_IP:-100.110.81.2}:8088:80"

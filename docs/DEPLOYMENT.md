@@ -56,8 +56,8 @@ The API runs Flyway migrations on startup, creating the schema. The default serv
 
 ## 5. TLS and public routing
 
-The container Nginx listens only on `127.0.0.1:8088` on `vps01`. If IONOS remains the public
-gateway, install the host Nginx site there and point it over Tailscale at the vps01 address;
+The container Nginx listens on the vps01 Tailscale address `100.110.81.2:8088`. If IONOS remains
+the public gateway, install the host Nginx site there and point it over Tailscale at that vps01 address;
 do not point it at `192.168.0.104`, which only exists on the home LAN.
 
 The existing site template is `deploy/nginx/eventshare.conf`. Update APP_BASE_URL,
@@ -103,7 +103,7 @@ against a newer schema during a rollback window.
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.override.yml ps
-curl -fsSL http://127.0.0.1:8088/api/ping -L
+curl -fsSL http://100.110.81.2:8088/api/ping -L
 ```
 
 RabbitMQ and the standalone worker are deliberately not part of this deployment yet. The

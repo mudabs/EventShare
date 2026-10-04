@@ -11,6 +11,8 @@ NEXT_PUBLIC_APP_BASE_URL. Same value exposed to the browser. Used by: frontend.
 NEXT_PUBLIC_API_BASE_URL. Base URL the browser uses for API calls, for example
 `https://host/api`. Used by: frontend.
 CORS_ALLOWED_ORIGINS. Comma-separated origins allowed to call the API. Used by: api.
+EVENTSHARE_TAILSCALE_IP. Tailscale IPv4 address used for the production Nginx binding on vps01;
+defaults to `100.110.81.2`.
 
 ## PostgreSQL
 

@@ -90,7 +90,7 @@ bash scripts/deploy-prod.sh
 
 ## Troubleshooting
 
-- If `curl http://127.0.0.1:8088/api/ping` fails, check the app Nginx container and the host
+- If `curl http://100.110.81.2:8088/api/ping` fails, check the app Nginx container and the host
   Nginx/Tailscale path.
 - If Compose says no configuration file was provided, make sure you are in `~/apps/eventshare`.
 - If an SSH session disconnects during a build, reconnect and run `bash scripts/deploy-prod.sh`;

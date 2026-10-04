@@ -13,6 +13,7 @@ cd "$ROOT_DIR"
 # monitoring opt-in. RabbitMQ and the standalone worker are deferred and are
 # not part of the current production Compose topology.
 COMPOSE_ARGS=(-f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.override.yml)
+EDGE_URL="${EVENTSHARE_EDGE_URL:-http://100.110.81.2:8088}"
 
 echo "[deploy] pulling latest code"
 git pull --ff-only
@@ -26,13 +27,13 @@ docker compose "${COMPOSE_ARGS[@]}" ps
 
 echo "[deploy] checking local edge endpoint"
 for attempt in 1 2 3 4 5 6; do
-  if curl -fsSL http://127.0.0.1:8088/api/ping -L; then
+if curl -fsSL "${EDGE_URL}/api/ping" -L; then
     break
   fi
   echo "[deploy] edge not ready yet, retrying ($attempt/6)"
   sleep 10
 done
-curl -fsSL http://127.0.0.1:8088/api/ping -L
+curl -fsSL "${EDGE_URL}/api/ping" -L
 
 echo "[deploy] pruning unused images"
 docker image prune -f
