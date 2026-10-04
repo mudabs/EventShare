@@ -80,6 +80,12 @@ export const fetchGallery = (code: string, cursor?: string | null, limit = 30) =
   return request<GalleryPage>(`/events/code/${encodeURIComponent(code)}/media?${params.toString()}`);
 };
 
+export const deleteOwnMedia = (code: string, mediaId: string, payload: { membershipId?: string; displayName?: string }) =>
+  request<void>(`/events/code/${encodeURIComponent(code)}/media/${encodeURIComponent(mediaId)}`, {
+    method: 'DELETE',
+    body: JSON.stringify(payload)
+  });
+
 export const createEvent = (token: string, payload: CreateEventRequest) =>
   request<EventResponse>(`/events`, { method: 'POST', token, body: JSON.stringify(payload) });
 
@@ -161,6 +167,12 @@ export const updateEventSettings = (token: string, eventId: string, body: Partia
     method: 'PATCH',
     token,
     body: JSON.stringify(body)
+  });
+
+export const deleteOwnedEvent = (token: string, eventId: string) =>
+  request<void>(`/events/${encodeURIComponent(eventId)}`, {
+    method: 'DELETE',
+    token
   });
 
 // ---- Plans + billing ----

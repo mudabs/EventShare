@@ -15,6 +15,7 @@ public record MediaResponse(
         String status,
         String moderationState,
         String uploaderDisplayName,
+    Long sizeBytes,
         Integer width,
         Integer height,
         BigDecimal durationSeconds,
@@ -33,6 +34,7 @@ public record MediaResponse(
                 media.getStatus().name(),
                 media.getModerationState().name(),
                 media.getUploaderDisplayName(),
+                media.getSizeBytes(),
                 media.getWidth(),
                 media.getHeight(),
                 media.getDurationSeconds(),
@@ -45,7 +47,7 @@ public record MediaResponse(
     /** A copy with uploader identity removed (for anonymous-mode galleries). */
     public MediaResponse withoutUploader() {
         return new MediaResponse(id, eventId, mediaType, contentType, originalFilename, status,
-                moderationState, null, width, height, durationSeconds, duplicate, createdAt,
+                moderationState, null, sizeBytes, width, height, durationSeconds, duplicate, createdAt,
                 originalUrl, thumbnailUrl);
     }
 }

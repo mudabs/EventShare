@@ -5,6 +5,7 @@ import com.eventshare.api.common.util.ClientIp;
 import com.eventshare.api.common.util.Hashing;
 import com.eventshare.api.event.EventRepository;
 import com.eventshare.api.media.dto.CompleteUploadRequest;
+import com.eventshare.api.media.dto.DeleteOwnMediaRequest;
 import com.eventshare.api.media.dto.GalleryPageResponse;
 import com.eventshare.api.media.dto.MediaResponse;
 import com.eventshare.api.media.dto.UploadUrlRequest;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.util.UUID;
 
@@ -71,6 +73,15 @@ public class MediaController {
                                        HttpServletRequest httpRequest) {
         recordVisitQuietly(code, httpRequest);
         return mediaService.gallery(code, cursor, limit);
+    }
+
+    @Operation(summary = "Delete your own uploaded media item from the shared gallery")
+    @DeleteMapping("/api/events/code/{code}/media/{mediaId}")
+    public void deleteOwnMedia(@PathVariable String code,
+                               @PathVariable UUID mediaId,
+                               @Valid @RequestBody DeleteOwnMediaRequest request,
+                               HttpServletRequest httpRequest) {
+        mediaService.deleteOwnMedia(code, mediaId, request, ClientIp.resolve(httpRequest));
     }
 
     private void recordVisitQuietly(String code, HttpServletRequest httpRequest) {

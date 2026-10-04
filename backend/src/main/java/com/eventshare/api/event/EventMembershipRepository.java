@@ -17,4 +17,6 @@ public interface EventMembershipRepository extends JpaRepository<EventMembership
     List<EventMembership> findByUserIdAndStatus(UUID userId, MembershipStatus status);
 
     List<EventMembership> findByEventIdOrderByJoinedAtAsc(UUID eventId);
+
+    Optional<EventMembership> findByIdAndEventIdAndStatus(UUID id, UUID eventId, MembershipStatus status);
 }

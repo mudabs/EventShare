@@ -63,9 +63,28 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --
 ## 6. CI/CD
 
 `.github/workflows/ci.yml` builds and tests on every push and pull request.
-`.github/workflows/deploy.yml` deploys automatically on push to `main` and also supports
-manual dispatch. Add repository secrets VPS_HOST, VPS_USER, VPS_SSH_KEY, and VPS_APP_DIR.
-The deploy step runs `scripts/deploy-prod.sh` on the VPS.
+`.github/workflows/deploy.yml` now runs directly on your VPS through a self-hosted
+GitHub Actions runner (label: `eventshare-vps`). It deploys automatically after CI
+passes on `main` and also supports manual dispatch.
+
+Required repository secret:
+
+- `VPS_APP_DIR` (example: `/home/<user>/apps/eventshare`)
+
+The deploy job changes to `VPS_APP_DIR` and runs `scripts/deploy-prod.sh` locally on
+the server.
+
+### Self-hosted runner setup (one-time on VPS)
+
+1. In GitHub: Settings -> Actions -> Runners -> New self-hosted runner (Linux x64).
+2. On VPS, run the generated download/configure commands.
+3. During configure, add labels including `eventshare-vps`.
+4. Install and start the runner service:
+
+	./svc.sh install
+	./svc.sh start
+
+5. Verify runner is online in GitHub before pushing to `main`.
 
 ## 7. Updating and rollback
 

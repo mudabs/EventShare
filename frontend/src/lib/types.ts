@@ -68,6 +68,7 @@ export interface MediaItem {
   status: string;
   moderationState: string;
   uploaderDisplayName: string | null;
+  sizeBytes: number | null;
   width: number | null;
   height: number | null;
   durationSeconds: number | null;

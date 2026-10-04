@@ -2,6 +2,7 @@
 
 import { useAuth } from '@clerk/nextjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useFeedback } from '@/components/feedback/AppFeedback';
 import { fetchEventMembers, removeEventMember } from '@/lib/api';
 import type { MemberView } from '@/lib/types';
 
@@ -23,6 +24,7 @@ function relative(iso: string | null) {
 
 export function EventGuests({ eventId }: { eventId: string }) {
   const { getToken } = useAuth();
+  const { confirm, toast } = useFeedback();
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
@@ -33,7 +35,14 @@ export function EventGuests({ eventId }: { eventId: string }) {
   const remove = useMutation({
     mutationFn: async (membershipId: string) =>
       removeEventMember((await getToken()) ?? '', eventId, membershipId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['eventMembers', eventId] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['eventMembers', eventId] });
+      toast({ title: 'Guest removed', tone: 'success' });
+    },
+    onError: (err) => {
+      const message = err instanceof Error ? err.message : 'Could not remove guest';
+      toast({ title: 'Remove failed', message, tone: 'error' });
+    }
   });
 
   if (isLoading) return <div className="h-40 animate-pulse rounded-2xl bg-blush" />;
@@ -78,8 +87,14 @@ export function EventGuests({ eventId }: { eventId: string }) {
                 </div>
                 {removable && (
                   <button
-                    onClick={() => {
-                      if (window.confirm(`Remove ${m.displayName || 'this guest'} from the event?`)) {
+                    onClick={async () => {
+                      const accepted = await confirm({
+                        title: 'Remove guest from event?',
+                        message: `${m.displayName || 'This guest'} will no longer be able to access the event.`,
+                        confirmText: 'Remove guest',
+                        tone: 'danger'
+                      });
+                      if (accepted) {
                         remove.mutate(m.membershipId);
                       }
                     }}

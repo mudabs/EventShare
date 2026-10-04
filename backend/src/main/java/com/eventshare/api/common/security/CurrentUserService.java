@@ -29,16 +29,22 @@ public class CurrentUserService {
     private final UserRepository users;
     private final ClerkUserClient clerk;
     private final Set<String> adminEmails;
+        private final Set<String> adminClerkUserIds;
 
     public CurrentUserService(UserRepository users,
                               ClerkUserClient clerk,
-                              @Value("${eventshare.admin-emails:}") String adminEmailsRaw) {
+                      @Value("${eventshare.admin-emails:}") String adminEmailsRaw,
+                      @Value("${eventshare.admin-clerk-user-ids:}") String adminClerkUserIdsRaw) {
         this.users = users;
         this.clerk = clerk;
         this.adminEmails = Arrays.stream(adminEmailsRaw.split(","))
                 .map(s -> s.trim().toLowerCase())
                 .filter(s -> !s.isBlank())
                 .collect(Collectors.toUnmodifiableSet());
+        this.adminClerkUserIds = Arrays.stream(adminClerkUserIdsRaw.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isBlank())
+            .collect(Collectors.toUnmodifiableSet());
     }
 
     @Transactional
@@ -74,7 +80,7 @@ public class CurrentUserService {
         user.setEmail(email);
         user.setDisplayName(firstNonBlank(name, email));
         user.setAvatarUrl(avatar);
-        user.setRole(isAdminEmail(email) ? Role.ADMIN : Role.HOST);
+        user.setRole(isAdminIdentity(email, clerkUserId) ? Role.ADMIN : Role.HOST);
         user.setLastSeenAt(Instant.now());
         try {
             return users.save(user);
@@ -98,7 +104,7 @@ public class CurrentUserService {
             }
         }
 
-        if (isAdminEmail(user.getEmail()) && user.getRole() != Role.ADMIN) {
+        if (isAdminIdentity(user.getEmail(), user.getClerkUserId()) && user.getRole() != Role.ADMIN) {
             user.setRole(Role.ADMIN);
             dirty = true;
         }
@@ -115,6 +121,10 @@ public class CurrentUserService {
 
     private boolean isAdminEmail(String email) {
         return email != null && adminEmails.contains(email.toLowerCase());
+    }
+
+    private boolean isAdminIdentity(String email, String clerkUserId) {
+        return isAdminEmail(email) || (clerkUserId != null && adminClerkUserIds.contains(clerkUserId));
     }
 
     private static String stringClaim(Jwt jwt, String name) {

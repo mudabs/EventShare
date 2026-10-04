@@ -3,6 +3,7 @@
 import { useAuth } from '@clerk/nextjs';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { FeedbackProvider } from '@/components/feedback/AppFeedback';
 
 /** Wipes all cached query data when the user signs out, so no stale tenant data lingers. */
 function AuthCacheSync() {
@@ -32,8 +33,10 @@ export function Providers({ children }: { children: ReactNode }) {
   );
   return (
     <QueryClientProvider client={client}>
-      <AuthCacheSync />
-      {children}
+      <FeedbackProvider>
+        <AuthCacheSync />
+        {children}
+      </FeedbackProvider>
     </QueryClientProvider>
   );
 }

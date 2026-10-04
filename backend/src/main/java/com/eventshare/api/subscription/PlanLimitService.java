@@ -6,12 +6,17 @@ import com.eventshare.api.event.EventRepository;
 import com.eventshare.api.media.MediaRepository;
 import com.eventshare.api.media.MediaType;
 import com.eventshare.api.media.ModerationState;
+import com.eventshare.api.user.Role;
 import com.eventshare.api.user.User;
 import com.eventshare.api.user.UserRepository;
 import com.eventshare.api.whitelist.WhitelistedUserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Resolves the effective plan for a user (whitelist overrides everything) and
@@ -26,20 +31,32 @@ public class PlanLimitService {
     private final EventRepository events;
     private final MediaRepository media;
     private final UserRepository users;
+    private final Set<String> demoEmails;
 
     public PlanLimitService(PlanRepository plans, SubscriptionRepository subscriptions,
                             WhitelistedUserRepository whitelist, EventRepository events,
-                            MediaRepository media, UserRepository users) {
+                            MediaRepository media, UserRepository users,
+                            @Value("${eventshare.demo-emails:}") String demoEmailsRaw) {
         this.plans = plans;
         this.subscriptions = subscriptions;
         this.whitelist = whitelist;
         this.events = events;
         this.media = media;
         this.users = users;
+        this.demoEmails = Arrays.stream(demoEmailsRaw.split(","))
+                .map(s -> s.trim().toLowerCase())
+                .filter(s -> !s.isBlank())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Transactional(readOnly = true)
     public boolean isWhitelisted(User user) {
+        if (user.getRole() == Role.ADMIN) {
+            return true;
+        }
+        if (user.getEmail() != null && demoEmails.contains(user.getEmail().toLowerCase())) {
+            return true;
+        }
         return user.getEmail() != null
                 && whitelist.existsByEmailIgnoreCaseAndActiveTrueAndDeletedAtIsNull(user.getEmail());
     }

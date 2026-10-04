@@ -53,6 +53,9 @@ public class SecurityConfig {
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
 
+    @Value("${eventshare.local-dev-openapi-enabled:false}")
+    private boolean localDevOpenApiEnabled;
+
     public SecurityConfig(AppProperties props) {
         this.props = props;
     }
@@ -64,13 +67,17 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                    .requestMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
+                        .requestMatchers("/api", "/api/").permitAll()
                         .requestMatchers("/api/ping").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                        .access((authentication, object) ->
+                                new org.springframework.security.authorization.AuthorizationDecision(localDevOpenApiEnabled))
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/plans").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/billing/webhook").permitAll()
                         // Capability-based (invite code) guest endpoints:
                         .requestMatchers(HttpMethod.GET, "/api/events/code/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/events/code/*/media/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/events/code/*/join").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/media/upload-url").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/media/*/complete").permitAll()

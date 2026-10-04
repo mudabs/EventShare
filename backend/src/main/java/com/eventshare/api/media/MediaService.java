@@ -9,9 +9,12 @@ import com.eventshare.api.common.util.ObjectKeys;
 import com.eventshare.api.common.util.RateLimiter;
 import com.eventshare.api.config.AppProperties;
 import com.eventshare.api.event.Event;
+import com.eventshare.api.event.EventMembershipRepository;
 import com.eventshare.api.event.EventRepository;
+import com.eventshare.api.event.MembershipStatus;
 import com.eventshare.api.event.UploaderVisibility;
 import com.eventshare.api.media.dto.CompleteUploadRequest;
+import com.eventshare.api.media.dto.DeleteOwnMediaRequest;
 import com.eventshare.api.media.dto.GalleryPageResponse;
 import com.eventshare.api.media.dto.MediaResponse;
 import com.eventshare.api.media.dto.UploadUrlRequest;
@@ -42,6 +45,7 @@ public class MediaService {
 
     private final MediaRepository media;
     private final EventRepository events;
+    private final EventMembershipRepository memberships;
     private final R2StorageService storage;
     private final AuditService audit;
     private final RateLimiter rateLimiter;
@@ -51,6 +55,7 @@ public class MediaService {
 
     public MediaService(MediaRepository media,
                         EventRepository events,
+                        EventMembershipRepository memberships,
                         R2StorageService storage,
                         AuditService audit,
                         RateLimiter rateLimiter,
@@ -58,6 +63,7 @@ public class MediaService {
                         MeterRegistry meterRegistry) {
         this.media = media;
         this.events = events;
+        this.memberships = memberships;
         this.storage = storage;
         this.audit = audit;
         this.rateLimiter = rateLimiter;
@@ -202,6 +208,43 @@ public class MediaService {
         }
         return new GalleryPageResponse(items, nextCursor, hasMore);
     }
+
+        @Transactional
+        public void deleteOwnMedia(String inviteCode, UUID mediaId, DeleteOwnMediaRequest request, String clientIp) {
+        Event event = events.findByInviteCodeAndDeletedAtIsNull(inviteCode)
+            .orElseThrow(() -> new NotFoundException("Event not found"));
+
+        Media entity = media.findByIdAndEventId(mediaId, event.getId())
+            .orElseThrow(() -> new NotFoundException("Media not found"));
+
+        boolean allowed = false;
+        String actorLabel = trimToNull(request.displayName());
+
+        if (request.membershipId() != null && entity.getUploaderMembershipId() != null
+            && request.membershipId().equals(entity.getUploaderMembershipId())) {
+            memberships.findByIdAndEventIdAndStatus(request.membershipId(), event.getId(), MembershipStatus.ACTIVE)
+                .orElseThrow(() -> new ForbiddenException("Uploader membership is no longer active"));
+            allowed = true;
+        }
+
+        if (!allowed && actorLabel != null && entity.getUploaderDisplayName() != null
+            && entity.getUploaderDisplayName().equalsIgnoreCase(actorLabel)) {
+            allowed = true;
+        }
+
+        if (!allowed) {
+            throw new ForbiddenException("Only the uploader can delete this media");
+        }
+
+        entity.setModerationState(ModerationState.DELETED);
+        media.save(entity);
+
+        audit.record(entity.getEventId(), null, actorLabel,
+            "MEDIA_SELF_DELETED", "MEDIA", entity.getId(),
+            Map.of("mediaType", entity.getMediaType().name(),
+                "sizeBytes", entity.getSizeBytes() == null ? 0 : entity.getSizeBytes()),
+            clientIp);
+        }
 
     // ---- helpers ----
 

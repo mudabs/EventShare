@@ -2,6 +2,7 @@
 
 import { useAuth } from '@clerk/nextjs';
 import { useState } from 'react';
+import { useFeedback } from '@/components/feedback/AppFeedback';
 import { createEvent } from '@/lib/api';
 import type { EventResponse, EventType } from '@/lib/types';
 
@@ -11,6 +12,7 @@ const EVENT_TYPES: EventType[] = [
 
 export function CreateEventForm({ onCreated }: { onCreated: (event: EventResponse) => void }) {
   const { getToken } = useAuth();
+  const { toast } = useFeedback();
   const [name, setName] = useState('');
   const [eventType, setEventType] = useState<EventType>('WEDDING');
   const [eventDate, setEventDate] = useState('');
@@ -34,8 +36,11 @@ export function CreateEventForm({ onCreated }: { onCreated: (event: EventRespons
         eventDate: eventDate || undefined
       });
       onCreated(created);
+      toast({ title: 'Event created', message: 'Your event is ready to share.', tone: 'success' });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create the event');
+      const message = err instanceof Error ? err.message : 'Could not create the event';
+      setError(message);
+      toast({ title: 'Event creation failed', message, tone: 'error' });
     } finally {
       setSubmitting(false);
     }

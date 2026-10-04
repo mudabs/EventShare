@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -51,6 +52,13 @@ public class EventController {
     @GetMapping("/{id}")
     public EventResponse get(@CurrentUser User host, @PathVariable UUID id) {
         return eventService.getEvent(host, id);
+    }
+
+    @Operation(summary = "Delete an event you host")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@CurrentUser User host, @PathVariable UUID id) {
+        eventService.deleteEvent(host, id);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Event analytics (host)")

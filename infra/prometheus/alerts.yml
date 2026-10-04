@@ -1,0 +1,38 @@
+groups:
+  - name: eventshare-api-alerts
+    rules:
+      - alert: EventShareApiDown
+        expr: up{job="eventshare-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "EventShare API is down"
+          description: "Prometheus could not scrape eventshare-api for more than 2 minutes."
+
+      - alert: EventShareApi5xxRateHigh
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="eventshare-api",status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="eventshare-api"}[5m])), 0.001)
+          ) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx error ratio on EventShare API"
+          description: "5xx responses are above 5% for at least 10 minutes."
+
+      - alert: EventShareApiP95LatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_server_requests_seconds_bucket{job="eventshare-api"}[5m])) by (le)
+          ) > 1.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API p95 latency"
+          description: "p95 latency is above 1.5s for at least 10 minutes."

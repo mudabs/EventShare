@@ -12,8 +12,7 @@ import com.eventshare.api.event.EventRepository;
 import com.eventshare.api.event.EventStatus;
 import com.eventshare.api.media.MediaRepository;
 import com.eventshare.api.media.ModerationState;
-import com.eventshare.api.subscription.Subscription;
-import com.eventshare.api.subscription.SubscriptionRepository;
+import com.eventshare.api.subscription.PlanLimitService;
 import com.eventshare.api.subscription.SubscriptionService;
 import com.eventshare.api.subscription.SubscriptionSource;
 import com.eventshare.api.user.User;
@@ -40,19 +39,20 @@ public class AdminService {
     private final UserRepository users;
     private final EventRepository events;
     private final MediaRepository media;
-    private final SubscriptionRepository subscriptions;
     private final SubscriptionService subscriptionService;
+    private final PlanLimitService planLimitService;
     private final AdminGuard adminGuard;
     private final AuditService audit;
 
     public AdminService(UserRepository users, EventRepository events, MediaRepository media,
-                        SubscriptionRepository subscriptions, SubscriptionService subscriptionService,
+                        SubscriptionService subscriptionService,
+                        PlanLimitService planLimitService,
                         AdminGuard adminGuard, AuditService audit) {
         this.users = users;
         this.events = events;
         this.media = media;
-        this.subscriptions = subscriptions;
         this.subscriptionService = subscriptionService;
+        this.planLimitService = planLimitService;
         this.adminGuard = adminGuard;
         this.audit = audit;
     }
@@ -63,7 +63,7 @@ public class AdminService {
     public List<AdminUserView> searchUsers(User admin, String query) {
         adminGuard.requireAdmin(admin);
         return users.search(query == null ? "" : query.trim(), PageRequest.of(0, PAGE)).stream()
-                .map(u -> AdminUserView.from(u, planCodeOf(u.getId())))
+                .map(u -> AdminUserView.from(u, planCodeOf(u)))
                 .toList();
     }
 
@@ -71,7 +71,7 @@ public class AdminService {
     public AdminUserView getUser(User admin, UUID id) {
         adminGuard.requireAdmin(admin);
         User u = users.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
-        return AdminUserView.from(u, planCodeOf(id));
+        return AdminUserView.from(u, planCodeOf(u));
     }
 
     @Transactional
@@ -160,10 +160,8 @@ public class AdminService {
         return new PlatformStats(totalUsers, totalEvents, totalUploads, totalStorage, monthlyGrowth());
     }
 
-    private String planCodeOf(UUID userId) {
-        return subscriptions.findByUserIdAndDeletedAtIsNull(userId)
-                .map(Subscription::getPlanCode)
-                .orElse("FREE");
+    private String planCodeOf(User user) {
+        return planLimitService.effectivePlan(user).getCode();
     }
 
     private List<MonthCount> monthlyGrowth() {

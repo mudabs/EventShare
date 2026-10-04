@@ -16,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 public class StripeGateway {
 
     private static final String API = "https://api.stripe.com";
+    private static final long WEBHOOK_TOLERANCE_SECONDS = 300;
 
     private final HttpClient http = HttpClient.newHttpClient();
     private final ObjectMapper mapper;
@@ -183,6 +185,18 @@ public class StripeGateway {
         if (timestamp == null || v1 == null) {
             return false;
         }
+
+        long signedAt;
+        try {
+            signedAt = Long.parseLong(timestamp);
+        } catch (NumberFormatException invalidTimestamp) {
+            return false;
+        }
+        long ageSeconds = Math.abs(Instant.now().getEpochSecond() - signedAt);
+        if (ageSeconds > WEBHOOK_TOLERANCE_SECONDS) {
+            return false;
+        }
+
         String expected = hmacSha256Hex(webhookSecret, timestamp + "." + payload);
         return constantTimeEquals(expected, v1);
     }

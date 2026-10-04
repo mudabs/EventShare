@@ -3,6 +3,7 @@
 import { useAuth } from '@clerk/nextjs';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useFeedback } from '@/components/feedback/AppFeedback';
 import { fetchOwnerGallery, moderateMedia, permanentDeleteMedia, updateEventSettings } from '@/lib/api';
 import type { MediaItem, ModerationState } from '@/lib/types';
 
@@ -60,9 +61,10 @@ function Tile({
 
 export function OwnerGallery({ eventId }: { eventId: string }) {
   const { getToken } = useAuth();
+  const { confirm, toast } = useFeedback();
   const queryClient = useQueryClient();
   const [state, setState] = useState<ModerationState>('VISIBLE');
-  const [notice, setNotice] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['ownerGallery', eventId, state],
@@ -70,24 +72,59 @@ export function OwnerGallery({ eventId }: { eventId: string }) {
   });
 
   async function handleAction(mediaId: string, action: string) {
-    if (action === 'PERMANENT' && !window.confirm('Permanently delete this item? This cannot be undone.')) {
-      return;
+    if (action === 'DELETE') {
+      const accepted = await confirm({
+        title: 'Delete image from gallery?',
+        message: 'The image will move to Deleted and can be restored later.',
+        confirmText: 'Delete',
+        tone: 'danger'
+      });
+      if (!accepted) return;
     }
-    const token = (await getToken()) ?? '';
+
     if (action === 'PERMANENT') {
-      await permanentDeleteMedia(token, eventId, mediaId);
-    } else {
-      await moderateMedia(token, eventId, mediaId, action);
+      const accepted = await confirm({
+        title: 'Permanently delete this image?',
+        message: 'This cannot be undone and will remove stored files.',
+        confirmText: 'Permanently delete',
+        tone: 'danger'
+      });
+      if (!accepted) return;
     }
-    queryClient.invalidateQueries({ queryKey: ['ownerGallery', eventId] });
+    setActionError(null);
+    try {
+      const token = (await getToken()) ?? '';
+      if (action === 'PERMANENT') {
+        await permanentDeleteMedia(token, eventId, mediaId);
+        toast({ title: 'Image permanently deleted', tone: 'success' });
+      } else {
+        await moderateMedia(token, eventId, mediaId, action);
+        toast({
+          title: action === 'DELETE' ? 'Image deleted' : 'Image updated',
+          message: action === 'DELETE' ? 'You can restore it from the Deleted tab.' : undefined,
+          tone: 'success'
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['ownerGallery', eventId] });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not update media';
+      setActionError(message);
+      toast({ title: 'Media action failed', message, tone: 'error' });
+    }
   }
 
   async function handleSetCover(mediaId: string) {
-    const token = (await getToken()) ?? '';
-    await updateEventSettings(token, eventId, { coverMediaId: mediaId });
-    await queryClient.invalidateQueries({ queryKey: ['event', eventId] });
-    setNotice('Cover image updated. Guests will see it on the join page.');
-    setTimeout(() => setNotice(null), 2500);
+    setActionError(null);
+    try {
+      const token = (await getToken()) ?? '';
+      await updateEventSettings(token, eventId, { coverMediaId: mediaId });
+      await queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      toast({ title: 'Cover image updated', message: 'Guests will see this on the join page.', tone: 'success' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not set cover image';
+      setActionError(message);
+      toast({ title: 'Could not set cover image', message, tone: 'error' });
+    }
   }
 
   const items = data?.items ?? [];
@@ -106,7 +143,7 @@ export function OwnerGallery({ eventId }: { eventId: string }) {
         ))}
       </div>
 
-      {notice && <p className="rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700">{notice}</p>}
+      {actionError && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{actionError}</p>}
       {isLoading && <p className="py-8 text-center text-ink/50">Loading...</p>}
       {isError && <p className="py-8 text-center text-red-600">Could not load media.</p>}
       {!isLoading && items.length === 0 && (

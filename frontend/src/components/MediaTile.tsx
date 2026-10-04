@@ -1,14 +1,33 @@
 import type { MediaItem } from '@/lib/types';
 
-export function MediaTile({ item }: { item: MediaItem }) {
+export function MediaTile({
+  item,
+  onOpen,
+  selectionMode = false,
+  selected = false,
+  onToggleSelect
+}: {
+  item: MediaItem;
+  onOpen: (item: MediaItem) => void;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (item: MediaItem) => void;
+}) {
   const previewSrc = item.thumbnailUrl ?? item.originalUrl;
   const processing = item.status !== 'PROCESSED';
 
+  function handleClick() {
+    if (selectionMode && onToggleSelect) {
+      onToggleSelect(item);
+      return;
+    }
+    onOpen(item);
+  }
+
   return (
-    <a
-      href={item.originalUrl}
-      target="_blank"
-      rel="noreferrer"
+    <button
+      type="button"
+      onClick={handleClick}
       className="group relative block aspect-square overflow-hidden rounded-xl bg-blush ring-1 ring-brand/10"
       title={item.originalFilename ?? 'media'}
     >
@@ -38,6 +57,14 @@ export function MediaTile({ item }: { item: MediaItem }) {
           {item.uploaderDisplayName}
         </span>
       )}
-    </a>
+      {selectionMode && (
+        <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60">
+          <span
+            className={`h-4 w-4 rounded border-2 ${selected ? 'border-brand bg-brand' : 'border-white bg-transparent'}`}
+            aria-hidden="true"
+          />
+        </span>
+      )}
+    </button>
   );
 }

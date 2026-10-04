@@ -96,6 +96,15 @@ public class EventService {
         return EventResponse.from(event, inviteUrl(event.getInviteCode()));
     }
 
+    @Transactional
+    public void deleteEvent(User host, UUID eventId) {
+        Event event = loadOwned(eventId, host);
+        event.setDeletedAt(Instant.now());
+        events.save(event);
+        audit.record(eventId, host.getId(), host.getDisplayName(), "EVENT_DELETED",
+                "EVENT", eventId, null, null);
+    }
+
     @Transactional(readOnly = true)
     public PublicEventResponse getPublicByInviteCode(String inviteCode) {
         Event event = events.findByInviteCodeAndDeletedAtIsNull(inviteCode)

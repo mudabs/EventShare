@@ -83,7 +83,27 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+Windows one-command shortcut:
+
+```powershell
+.\run.cmd
+```
+
 Then open `http://localhost` (nginx). The API is proxied at `/api`, Grafana at `/grafana`.
+For this stack, nginx is published on `http://localhost:8088`.
+
+- API root: `http://localhost:8088/api/`
+- API ping: `http://localhost:8088/api/ping`
+- Grafana: `http://localhost:8088/grafana/`
+
+To enable Swagger/OpenAPI only for local development, set these before starting the stack:
+
+```bash
+SPRING_PROFILES_ACTIVE=prod,local
+LOCAL_DEV_OPENAPI_ENABLED=true
+```
+
+Then open `http://localhost:8088/api/swagger-ui/index.html`.
 Full setup, TLS, and first-run notes are in `docs/DEPLOYMENT.md`. Every variable is
 documented in `docs/ENVIRONMENT.md`.
 
@@ -123,11 +143,31 @@ cd worker  && mvn test
 cd frontend && npm run typecheck
 ```
 
+## Admin and demo accounts
+
+For test and live environments, platform access and no-payment plan overrides are
+available from the admin panel and environment configuration.
+
+- `ADMIN_EMAILS`: comma-separated emails that are auto-granted `ADMIN` on sign-in.
+- `ADMIN_CLERK_USER_IDS`: comma-separated Clerk user ids that are auto-granted
+  `ADMIN` even if the JWT email claim is missing.
+- `DEMO_EMAILS`: comma-separated recruiter/demo emails that receive unlimited plan
+  limits automatically.
+
+From the in-app admin page you can:
+
+- assign plan tiers to any user (including `UNLIMITED`) without charging payment,
+- whitelist users for unlimited access,
+- enable/disable users, and
+- archive/remove events.
+
 ## CI/CD
 
 `.github/workflows/ci.yml` builds and tests all three services on every push and pull
-request. `.github/workflows/deploy.yml` deploys to the VPS over SSH (manual trigger;
-configure the `VPS_*` repository secrets). See `docs/DEPLOYMENT.md`.
+request. `.github/workflows/deploy.yml` deploys from a self-hosted runner installed
+on the VPS (label `eventshare-vps`) after CI passes on `main`, and also supports
+manual trigger. Configure the `VPS_APP_DIR` repository secret. See
+`docs/DEPLOYMENT.md`.
 
 ## Documentation
 

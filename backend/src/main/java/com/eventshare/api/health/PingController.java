@@ -12,6 +12,17 @@ import java.util.Map;
 @RestController
 public class PingController {
 
+    @Operation(summary = "Public API root")
+    @GetMapping({"/api", "/api/"})
+    public Map<String, Object> apiRoot() {
+        return Map.of(
+                "service", "eventshare-api",
+                "status", "ok",
+                "ping", "/api/ping",
+                "time", Instant.now().toString()
+        );
+    }
+
     @Operation(summary = "Lightweight liveness probe for the API")
     @GetMapping("/api/ping")
     public Map<String, Object> ping() {
