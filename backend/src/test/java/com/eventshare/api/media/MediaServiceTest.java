@@ -5,6 +5,7 @@ import com.eventshare.api.common.error.BadRequestException;
 import com.eventshare.api.common.error.TooManyRequestsException;
 import com.eventshare.api.config.AppProperties;
 import com.eventshare.api.event.Event;
+import com.eventshare.api.event.EventMembershipRepository;
 import com.eventshare.api.event.EventRepository;
 import com.eventshare.api.event.EventStatus;
 import com.eventshare.api.media.dto.CompleteUploadRequest;
@@ -42,6 +43,7 @@ class MediaServiceTest {
 
     @Mock MediaRepository media;
     @Mock EventRepository events;
+    @Mock EventMembershipRepository memberships;
     @Mock R2StorageService storage;
     @Mock AuditService audit;
     @Mock com.eventshare.api.common.util.RateLimiter rateLimiter;
@@ -70,7 +72,8 @@ class MediaServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new MediaService(media, events, storage, audit, rateLimiter, props(), new SimpleMeterRegistry());
+        service = new MediaService(media, events, memberships, storage, audit, rateLimiter, props(),
+                new SimpleMeterRegistry());
         when(rateLimiter.tryAcquire(any(), anyInt())).thenReturn(true);
         when(media.save(any(Media.class))).thenAnswer(i -> i.getArgument(0));
         when(storage.presignDownload(anyString())).thenReturn("https://r2.example/dl");
