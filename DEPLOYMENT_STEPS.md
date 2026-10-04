@@ -1,138 +1,110 @@
-# EventShare VPS Deployment Steps
+# EventShare vps01 Deployment Steps
 
-This file is the short, practical checklist for deploying EventShare to the VPS.
+This is the short checklist for deploying EventShare to the tunneled home server.
 
 ## What runs
 
-The current `docker-compose.yml` starts 8 services:
+The current production deployment starts the core services:
 
 - `postgres`
-- `rabbitmq`
 - `api`
-- `worker`
 - `frontend`
 - `nginx`
-- `prometheus`
-- `grafana`
 
-In production, host Nginx terminates TLS and forwards to the app's container Nginx on
-`127.0.0.1:8088`. The rest stay on private Docker networks.
+Prometheus and Grafana are available through the opt-in `monitoring` profile. RabbitMQ and the
+standalone worker are deferred for a later stage; media processing currently runs inside `api`.
 
 ## Prerequisites
 
-- SSH access to the VPS as `munashe`
-- Docker Engine installed on the VPS
-- Docker Compose plugin installed on the VPS
-- A cloned copy of this repo on the VPS
+- SSH access to `vps01` through the local alias `myvps`
+- Docker Engine and the Compose plugin installed on `vps01`
+- A cloned copy of this repo at `~/apps/eventshare`
 - A filled-out `.env` file at the repo root
 
 ## First-time deployment
 
-1. SSH into the server:
+1. Verify SSH access:
 
-```bash
-ssh <user>@<vps-ip>
+```powershell
+ssh myvps
 ```
 
-2. Go to the repo root on the VPS:
+2. On `vps01`, clone and configure the repo:
 
 ```bash
 mkdir -p ~/apps
 cd ~/apps
 git clone <your-repo-url> eventshare
 cd ~/apps/eventshare
-```
-
-3. Pull the latest code:
-
-```bash
-git pull
-```
-
-4. Create or update the environment file:
-
-```bash
 cp .env.example .env
 ```
 
-5. Edit `.env` and set at least these values:
+3. Edit `.env` and set at least:
 
 - `APP_BASE_URL`
 - `NEXT_PUBLIC_APP_BASE_URL`
 - `NEXT_PUBLIC_API_BASE_URL`
 - `CORS_ALLOWED_ORIGINS`
 - `POSTGRES_*`
-- `RABBITMQ_*`
 - `R2_*`
 - `CLERK_*`
 - `GRAFANA_ADMIN_USER`
 - `GRAFANA_ADMIN_PASSWORD`
 
-6. Start everything:
+4. Start the deployment:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
+bash scripts/deploy-prod.sh
 ```
 
-7. Check service status:
+5. Check service status and the API:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
-```
-
-8. Check the API health endpoint:
-
-```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.override.yml ps
 curl -fsSL http://127.0.0.1:8088/api/ping -L
 ```
 
-9. If needed, check logs:
+6. If needed, check logs:
 
 ```bash
 cd ~/apps/eventshare
-docker compose logs -f api
-docker compose logs -f worker
-docker compose logs -f frontend
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.override.yml logs -f api
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.override.yml logs -f frontend
 ```
 
 ## Normal updates
 
-When you want to deploy a new version:
+From Windows:
+
+```powershell
+.\scripts\deploy-to-myvps.ps1
+```
+
+Or on `vps01`:
 
 ```bash
-ssh <user>@<vps-ip>
 cd ~/apps/eventshare
-git pull
+git pull --ff-only
 bash scripts/deploy-prod.sh
 ```
 
 ## Troubleshooting
 
-- If `curl http://127.0.0.1:8088/api/ping` fails, check the app Nginx container and the host Nginx site config.
-- If `docker compose logs -f ...` says `no configuration file provided`, make sure you are in `~/apps/eventshare` first.
-- If the SSH session disconnects during a long build, reconnect and run:
-
-```bash
-cd ~/apps/eventshare
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
-docker compose logs -f api
-```
-
-The containers keep running on the VPS even if your SSH session drops.
+- If `curl http://127.0.0.1:8088/api/ping` fails, check the app Nginx container and the host
+  Nginx/Tailscale path.
+- If Compose says no configuration file was provided, make sure you are in `~/apps/eventshare`.
+- If an SSH session disconnects during a build, reconnect and run `bash scripts/deploy-prod.sh`;
+  containers continue running independently of the SSH session.
 
 ## Rollback
 
-If a release causes problems:
-
 1. Check out the previous commit or tag.
-2. Run:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --remove-orphans
-```
+2. Run `bash scripts/deploy-prod.sh`.
 
 ## Notes
 
-- The frontend talks to the backend API through the URL set in `NEXT_PUBLIC_API_BASE_URL`.
-- The mobile app does not need the frontend to be up, but it does need the backend API.
-- If you move to HTTPS later, update the `APP_BASE_URL`, `NEXT_PUBLIC_APP_BASE_URL`, `NEXT_PUBLIC_API_BASE_URL`, and `CORS_ALLOWED_ORIGINS` values, then rebuild the frontend.
+- The frontend uses `NEXT_PUBLIC_API_BASE_URL` baked into its image at build time.
+- If IONOS remains the public gateway, its Nginx upstream must use the vps01 Tailscale address,
+  not `192.168.0.104`.
+- RabbitMQ and the standalone worker are intentionally deferred and should be reintroduced in a
+  separate migration when the broker-backed processing path is needed.

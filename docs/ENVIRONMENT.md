@@ -17,23 +17,21 @@ CORS_ALLOWED_ORIGINS. Comma-separated origins allowed to call the API. Used by: 
 POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD. Database name and credentials for the
 postgres container.
 SPRING_DATASOURCE_URL. JDBC URL, for example `jdbc:postgresql://postgres:5432/eventshare`.
-Used by: api, worker.
+Used by: api.
 SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD. Must match the POSTGRES_* values.
-Used by: api, worker.
+Used by: api.
 
-## RabbitMQ
-
-RABBITMQ_DEFAULT_USER, RABBITMQ_DEFAULT_PASS. Credentials for the rabbitmq container.
-SPRING_RABBITMQ_HOST, SPRING_RABBITMQ_PORT, SPRING_RABBITMQ_USERNAME,
-SPRING_RABBITMQ_PASSWORD. Connection settings. Used by: api, worker.
+RabbitMQ and the standalone worker are deferred. Their connection variables should be added
+when that architecture stage is reintroduced; they are not required by the current vps01
+deployment.
 
 ## Cloudflare R2
 
 R2_ACCOUNT_ID. Your Cloudflare account id.
-R2_ENDPOINT. `https://<account-id>.r2.cloudflarestorage.com`. Used by: api, worker.
-R2_REGION. Use `auto`. Used by: api, worker.
-R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY. R2 API token credentials. Used by: api, worker.
-R2_BUCKET. Bucket name, for example `eventshare-media`. Used by: api, worker.
+R2_ENDPOINT. `https://<account-id>.r2.cloudflarestorage.com`. Used by: api.
+R2_REGION. Use `auto`. Used by: api.
+R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY. R2 API token credentials. Used by: api.
+R2_BUCKET. Bucket name, for example `eventshare-media`. Used by: api.
 R2_PRESIGN_UPLOAD_TTL_SECONDS, R2_PRESIGN_DOWNLOAD_TTL_SECONDS. Lifetimes of signed URLs.
 Used by: api.
 
@@ -56,9 +54,9 @@ MEDIA_ALLOWED_CONTENT_TYPES. Comma-separated allowed MIME types. Used by: api.
 ## Observability and runtime
 
 GRAFANA_ADMIN_USER, GRAFANA_ADMIN_PASSWORD. Grafana admin login.
-JAVA_OPTS. JVM flags for api and worker, for example `-XX:MaxRAMPercentage=70`.
+JAVA_OPTS. JVM flags for api, for example `-XX:MaxRAMPercentage=70`.
 
-## CI/CD secrets (GitHub repository secrets)
+## CI/CD
 
-VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_APP_DIR. Used by the deploy workflow to SSH to the VPS
-and run Docker Compose.
+VPS_APP_DIR. Optional environment variable on the `vps01` self-hosted runner; defaults to
+`$HOME/apps/eventshare`. The deploy workflow no longer targets the IONOS host or its public IP.

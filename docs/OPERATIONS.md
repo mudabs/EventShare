@@ -2,21 +2,21 @@
 
 ## Monitoring
 
-Prometheus scrapes the API, the worker, and RabbitMQ every 15 seconds. Grafana provisions a
-Prometheus datasource and the EventShare Overview dashboard automatically at `/grafana`.
+When the optional monitoring profile is enabled, Prometheus scrapes the API every 15 seconds.
+Grafana provisions a Prometheus datasource and the EventShare Overview dashboard automatically
+at `/grafana`.
 
 Key metrics already exposed:
 
 API request rate and status mix from `http_server_requests_seconds_count`, p95 latency from
 the histogram, and 5xx error rate. Upload throughput from `eventshare_media_uploaded_total`.
-Worker throughput and failures from `eventshare_worker_processed_total` and
-`eventshare_worker_failed_total`, with mean processing time from the timer. RabbitMQ queue
-depth from `rabbitmq_queue_messages_ready`. JVM heap from `jvm_memory_used_bytes`.
+Media processing throughput and failures from `eventshare_media_processed_total` and
+`eventshare_media_processing_failed_total`, with mean processing time from the timer. JVM heap
+from `jvm_memory_used_bytes`.
 
 Suggested alerts to add in Grafana or Alertmanager: sustained 5xx rate above a threshold,
-API p95 latency above target, worker failure rate above zero for several minutes,
-`eventshare.media.process` queue depth growing without draining (worker stalled), and DLQ
-depth greater than zero (poison messages need triage).
+API p95 latency above target, media processing failures above zero for several minutes, and
+the number of uploaded media rows growing without processing.
 
 ## Backups
 
@@ -61,13 +61,9 @@ Media in R2 is unaffected by a host loss because it is stored externally. Verify
 
 ## Runbooks
 
-Worker backlog. If the media process queue grows, scale workers:
-`docker compose up -d --scale worker=3`. Confirm processing time and failure rate in Grafana.
-
-Dead-letter queue not empty. Inspect messages in the RabbitMQ management UI (the
-`eventshare.media.dlq` queue). Common causes are unsupported image formats or corrupt
-uploads; the corresponding media rows are marked FAILED. Fix the cause, then optionally
-re-publish or re-trigger processing.
+Media processing backlog. Inspect API logs and the media rows in `UPLOADED` or `PROCESSING`
+state. The scheduler is intentionally sequential on the small host; tune the processing
+settings only after checking available memory and CPU.
 
 API will not start. Check `docker compose logs api`. A Flyway validation error means a schema
 or migration mismatch; never edit an applied migration, add a new one. A datasource error

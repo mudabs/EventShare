@@ -7,17 +7,18 @@ R2 bucket for full functionality, though much of the code runs against local def
 
 ## Local setup
 
-Start dependencies and the three services:
+Start PostgreSQL and the active API/frontend services:
 
 ```bash
-docker compose up -d postgres rabbitmq
+docker compose up -d postgres
 cd backend && mvn spring-boot:run            # API on :8080
-cd worker  && mvn spring-boot:run            # worker on :8081
 cd frontend && cp .env.local.example .env.local && npm install && npm run dev   # :3000
 ```
 
-The API and worker default to localhost PostgreSQL and RabbitMQ (see each `application.yml`).
-Set R2_* and CLERK_* in your shell or an env file to exercise uploads and auth end to end.
+The API defaults to localhost PostgreSQL (see `backend/src/main/resources/application.yml`).
+Media processing runs in-process in the API. The `worker/` module and RabbitMQ configuration
+are retained for a later broker-backed processing stage. Set R2_* and CLERK_* in your shell or
+an env file to exercise uploads and auth end to end.
 
 ## Project conventions
 

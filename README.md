@@ -4,10 +4,9 @@ Collaborative event media sharing. A host creates an event, shares a QR code or 
 and guests upload photos and videos straight into a shared gallery. Hosts can moderate
 content, view analytics, and export everything.
 
-This repository contains a production-structured monorepo built as a modular monolith
-plus a background worker. It is designed to run on a single VPS while following
-distributed-system principles (stateless API, async processing, object storage,
-horizontal-ready services).
+This repository contains a production-structured modular monolith designed to run on the
+tunneled `vps01` home server. Media processing currently runs in-process through a durable
+database-backed scheduler; the former broker/worker path is retained for later reintroduction.
 
 > Status: this is an end-to-end vertical slice of the full specification. The path
 > "create event to guest upload to R2 to shared gallery" is implemented across the whole
@@ -19,10 +18,10 @@ horizontal-ready services).
 Host creates an event (Clerk-authenticated) and receives an invite code, link, and QR.
 Guests open the link, add their name (no account required), and upload media. Each upload
 goes directly to Cloudflare R2 through a presigned URL, is recorded with exact SHA-256
-duplicate detection, and emits a RabbitMQ event. The worker consumes that event, generates
-a thumbnail (image or video poster frame), extracts dimensions and duration, and writes the
-results back. The gallery renders newest-first with keyset pagination, infinite scroll, and
-near-real-time refresh. Prometheus scrapes the services and Grafana visualizes them.
+duplicate detection. The API scheduler generates a thumbnail (image or video poster frame),
+extracts dimensions and duration, and writes the results back. The gallery renders newest-first
+with keyset pagination, infinite scroll, and near-real-time refresh. Prometheus scrapes the API
+and Grafana visualizes it when monitoring is enabled.
 
 ## Architecture at a glance
 
@@ -35,39 +34,36 @@ flowchart LR
   FE -. presigned PUT .-> R2[(Cloudflare R2)]
   FE -. presigned GET .-> R2
   API --> PG[(PostgreSQL)]
-  API -->|publish| MQ[(RabbitMQ)]
-  MQ -->|consume| WK[Worker]
-  WK --> R2
-  WK --> PG
+  API -->|scheduled processing| PG
+  API --> R2
   PROM[Prometheus] --> API
-  PROM --> WK
-  PROM --> MQ
   GRAF[Grafana] --> PROM
 ```
 
-Media bytes never transit the API or worker request path on the way in: the browser uploads
-directly to R2. The worker pulls originals from R2 only to derive thumbnails. See
-`docs/ARCHITECTURE.md` for request-level sequence diagrams.
+Media bytes never transit the API request path on the way in: the browser uploads directly to
+R2. The API scheduler pulls originals from R2 only to derive thumbnails. See `docs/ARCHITECTURE.md`
+for the broader architecture and the deferred broker-backed design.
 
 ## Technology
 
 Frontend: Next.js 15 (App Router), TypeScript, TailwindCSS, React Query, Zustand, Clerk,
 PWA manifest. Backend: Spring Boot 3.5 on Java 25, Spring Security (OAuth2 resource server),
-Spring Data JPA, Flyway, Spring AMQP, AWS SDK v2 (R2). Worker: Spring Boot, Thumbnailator,
-ffmpeg. Data: PostgreSQL 16. Storage: Cloudflare R2. Messaging: RabbitMQ. Observability:
-Micrometer, Prometheus, Grafana. Delivery: Docker, Docker Compose, nginx, GitHub Actions.
+Spring Data JPA, Flyway, AWS SDK v2 (R2), Thumbnailator, and ffmpeg. Data: PostgreSQL 16.
+Storage: Cloudflare R2. Observability: Micrometer, Prometheus, Grafana. Delivery: Docker,
+Docker Compose, nginx, and GitHub Actions.
 
 ## Repository layout
 
 ```
-backend/    Spring Boot API (events, media, moderation schema, signed URLs, messaging)
-worker/     Spring Boot worker (RabbitMQ consumer, thumbnailing, metadata)
+backend/    Spring Boot API (events, media, moderation schema, signed URLs, in-process processing)
+worker/     Deferred Spring Boot worker (retained for later RabbitMQ reintroduction)
 frontend/   Next.js application (host dashboard, guest gallery, uploads)
-infra/      nginx, prometheus, grafana, rabbitmq configuration
+infra/      nginx, prometheus, grafana, and deferred RabbitMQ configuration
 docs/       Architecture, ERD, ADRs, API, environment, deployment, operations, onboarding
 .github/    CI and deployment workflows
-docker-compose.yml   Full single-VPS topology
+docker-compose.yml   vps01 single-host topology
 docker-compose.prod.yml   Production override for host-Nginx setups
+docker-compose.override.yml   vps01 resource limits and opt-in monitoring
 deploy/              Host Nginx site template(s) for VPS installation
 .env.example         Environment template
 ```
@@ -89,7 +85,8 @@ Windows one-command shortcut:
 .\run.cmd
 ```
 
-Then open `http://localhost` (nginx). The API is proxied at `/api`, Grafana at `/grafana`.
+Then open `http://localhost` (nginx). The API is proxied at `/api`; Grafana is available at
+`/grafana` when the `monitoring` profile is enabled.
 For this stack, nginx is published on `http://localhost:8088`.
 
 - API root: `http://localhost:8088/api/`
@@ -115,20 +112,20 @@ host Nginx and Let's Encrypt setup:
 - Docker Compose runs the application services
 - the app's container Nginx listens only on `127.0.0.1:8088`
 - host Nginx terminates TLS and forwards traffic to that local port
-- GitHub Actions deploys on push to `main` by SSHing to the VPS and running
+- GitHub Actions deploys on push to `main` using a self-hosted runner on `vps01`, which runs
   `scripts/deploy-prod.sh`
+- Windows operators can deploy manually through the `myvps` SSH alias with
+  `scripts/deploy-to-myvps.ps1`
 
 See `deploy/nginx/eventshare.conf` for the host site template.
 
 ## Local development (without Docker)
 
-Run PostgreSQL and RabbitMQ locally (or `docker compose up -d postgres rabbitmq`), then:
+Run PostgreSQL locally with Docker, then:
 
 ```bash
 # API
 cd backend && mvn spring-boot:run
-# Worker (new shell)
-cd worker && mvn spring-boot:run
 # Frontend (new shell)
 cd frontend && cp .env.local.example .env.local && npm install && npm run dev
 ```
@@ -163,11 +160,11 @@ From the in-app admin page you can:
 
 ## CI/CD
 
-`.github/workflows/ci.yml` builds and tests all three services on every push and pull
-request. `.github/workflows/deploy.yml` deploys from a self-hosted runner installed
-on the VPS (label `eventshare-vps`) after CI passes on `main`, and also supports
-manual trigger. It deploys from `$HOME/apps/eventshare` by default (or `VPS_APP_DIR`
-if set in the runner environment). See `docs/DEPLOYMENT.md`.
+`.github/workflows/ci.yml` builds and tests the active API/frontend path on every push and pull
+request. `.github/workflows/deploy.yml` deploys from a self-hosted runner installed on `vps01`
+(label `eventshare-vps01`) after CI passes on `main`, and also supports manual trigger. It
+deploys from `$HOME/apps/eventshare` by default (or `VPS_APP_DIR` if set in the runner
+environment). See `docs/DEPLOYMENT.md`.
 
 ## Documentation
 
