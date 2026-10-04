@@ -22,18 +22,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${{ secrets.VPS_APP_DIR }}" ]; then
-            echo "Missing secret VPS_APP_DIR"
+          APP_DIR="${VPS_APP_DIR:-$HOME/apps/eventshare}"
+          if [ ! -d "${APP_DIR}" ]; then
+            echo "Deploy directory does not exist: ${APP_DIR}"
             exit 1
           fi
-          if [ ! -d "${{ secrets.VPS_APP_DIR }}" ]; then
-            echo "VPS_APP_DIR does not exist: ${{ secrets.VPS_APP_DIR }}"
-            exit 1
-          fi
+          echo "APP_DIR=${APP_DIR}" >> "$GITHUB_ENV"
 
       - name: Deploy locally on server
         shell: bash
         run: |
           set -euo pipefail
-          cd "${{ secrets.VPS_APP_DIR }}"
+          cd "${APP_DIR}"
           bash scripts/deploy-prod.sh

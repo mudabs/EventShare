@@ -67,12 +67,10 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build --
 GitHub Actions runner (label: `eventshare-vps`). It deploys automatically after CI
 passes on `main` and also supports manual dispatch.
 
-Required repository secret:
+The deploy job runs `scripts/deploy-prod.sh` locally on the server from:
 
-- `VPS_APP_DIR` (example: `/home/<user>/apps/eventshare`)
-
-The deploy job changes to `VPS_APP_DIR` and runs `scripts/deploy-prod.sh` locally on
-the server.
+- default: `$HOME/apps/eventshare`
+- optional override: runner environment variable `VPS_APP_DIR`
 
 ### Self-hosted runner setup (one-time on VPS)
 

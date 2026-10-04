@@ -166,8 +166,8 @@ From the in-app admin page you can:
 `.github/workflows/ci.yml` builds and tests all three services on every push and pull
 request. `.github/workflows/deploy.yml` deploys from a self-hosted runner installed
 on the VPS (label `eventshare-vps`) after CI passes on `main`, and also supports
-manual trigger. Configure the `VPS_APP_DIR` repository secret. See
-`docs/DEPLOYMENT.md`.
+manual trigger. It deploys from `$HOME/apps/eventshare` by default (or `VPS_APP_DIR`
+if set in the runner environment). See `docs/DEPLOYMENT.md`.
 
 ## Documentation
 
