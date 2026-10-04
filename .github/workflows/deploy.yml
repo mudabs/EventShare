@@ -15,7 +15,7 @@ jobs:
   deploy:
     name: Deploy on tunneled vps01 runner
     # The runner must be installed on vps01, not the legacy IONOS host.
-    runs-on: [self-hosted, Linux, eventshare-vps01]
+    runs-on: eventshare-vps01
     # Only deploy when CI passed (workflow_dispatch bypasses this gate intentionally)
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
