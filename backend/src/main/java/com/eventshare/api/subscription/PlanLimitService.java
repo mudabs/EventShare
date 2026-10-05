@@ -12,6 +12,7 @@ import com.eventshare.api.user.UserRepository;
 import com.eventshare.api.whitelist.WhitelistedUserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
@@ -86,7 +87,15 @@ public class PlanLimitService {
         }
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Enforces per-event photo/video counts and the host's storage cap.
+     *
+     * <p>Propagation MANDATORY (change C3): this check is only race-safe when it runs in
+     * the caller's read-write transaction, after the host row has been locked with
+     * {@code UserRepository.findByIdForUpdate}, and before the PENDING media row is
+     * inserted. Calling it outside a transaction is a programming error and fails fast.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
     public void checkCanUpload(Event event, MediaType mediaType, long sizeBytes) {
         User owner = users.findById(event.getHostId()).orElse(null);
         if (owner == null) {

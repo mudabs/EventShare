@@ -81,6 +81,25 @@ eventshare:
   admin-emails: ${ADMIN_EMAILS:}
   admin-clerk-user-ids: ${ADMIN_CLERK_USER_IDS:}
   demo-emails: ${DEMO_EMAILS:}
+  # Interview/demo mode: seeded accounts, showcase events, nightly reset. See docs/DEMO.md.
+  demo:
+    enabled: ${DEMO_ENABLED:false}
+    host-username: ${DEMO_HOST_USERNAME:}
+    host-email: ${DEMO_HOST_EMAIL:}
+    host-password: ${DEMO_HOST_PASSWORD:}
+    host-name: ${DEMO_HOST_NAME:}
+    admin-enabled: ${DEMO_ADMIN_ENABLED:false}
+    admin-username: ${DEMO_ADMIN_USERNAME:}
+    admin-email: ${DEMO_ADMIN_EMAIL:}
+    admin-password: ${DEMO_ADMIN_PASSWORD:}
+    admin-name: ${DEMO_ADMIN_NAME:}
+    invite-code: ${DEMO_INVITE_CODE:}
+    secondary-invite-code: ${DEMO_SECONDARY_INVITE_CODE:}
+    promo-code: ${DEMO_PROMO_CODE:}
+    photo-count: ${DEMO_PHOTO_COUNT:18}
+    reset-cron: ${DEMO_RESET_CRON:0 0 4 * * *}
+    reset-zone: ${DEMO_RESET_ZONE:America/Chicago}
+    show-credentials: ${DEMO_SHOW_CREDENTIALS:false}
   stripe:
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}

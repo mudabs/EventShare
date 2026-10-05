@@ -140,6 +140,23 @@ cd worker  && mvn test
 cd frontend && npm run typecheck
 ```
 
+## Live demo
+
+<!-- Fill in your domain and the DEMO_HOST_PASSWORD from the server's .env. -->
+
+- App: https://YOUR-DOMAIN
+- Guest gallery, no login: https://YOUR-DOMAIN/e/EVENTSHARE
+- Host login: username `demo-host`, password `YOUR-DEMO-PASSWORD`
+
+Demo data resets every night at 4 AM US Central, so feel free to upload, hide, or delete.
+
+## Interview demo
+
+`.\demo.cmd` (Windows) or `scripts/demo-up.sh` starts a separate demo stack on
+`http://localhost:8090` with seeded host and admin logins, a sample wedding full of photos,
+guests and analytics, and a nightly reset. The same demo mode can run on the live site.
+Setup, credentials and an 8-minute walkthrough: `docs/DEMO.md`.
+
 ## Admin and demo accounts
 
 For test and live environments, platform access and no-payment plan overrides are
@@ -178,16 +195,25 @@ docs/DEPLOYMENT.md     VPS deployment, TLS, CI/CD secrets
 docs/DEPLOYMENT_RUNBOOK.md  Reproducible vps01 cutover and continuous deployment runbook
 docs/OPERATIONS.md     Monitoring, backups, disaster recovery, scaling, runbooks
 docs/ONBOARDING.md     Developer setup and conventions
+docs/changes/          Dated change write-ups (what changed, why, how to verify)
+docs/DEMO.md           Interview demo mode (seeded logins, showcase data, walkthrough)
+docs/README.md         Index of all docs, including which deployment doc is canonical
 ```
 
-## Roadmap (remaining specification phases)
+## Roadmap
 
-The schema and pipeline already account for these; they are the next vertical slices:
-host moderation actions (hide, restore, archive, delete) with audit trail; asynchronous
-ZIP export jobs (download flow plus worker consumer for the export queue and notifications);
-WebSocket gallery updates replacing the polling baseline; admin role and management;
-multi-event host dashboard listing; and AI-based near-duplicate clustering layered on top
-of the existing exact SHA-256 detection.
+Already shipped since the original slice: host moderation (hide, restore, archive, delete)
+with audit trail, admin role and panel, multi-event host dashboard, plans and Stripe billing,
+promo codes, whitelist, and analytics.
+
+Next: sweep abandoned PENDING upload reservations; asynchronous ZIP export jobs; WebSocket
+gallery updates replacing polling; a shared rate-limit store before running multiple API
+replicas; and AI-based near-duplicate clustering on top of exact SHA-256 detection.
+
+## Change history
+
+Significant changes are written up in `docs/changes/` (newest first in
+`docs/changes/README.md`), with the reasoning, the files touched, and how to verify them.
 
 ## License
 

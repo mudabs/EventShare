@@ -69,6 +69,106 @@ public class ClerkUserClient {
         }
     }
 
+    // ---- Demo account management (used only by demo.DemoSeeder) ----
+
+    /**
+     * Makes sure a Clerk user with this username (or, if no username is given, this
+     * email) exists and that its password is {@code password}, creating the user if
+     * needed. Returns the Clerk user id.
+     *
+     * <p>Used to seed interview demo accounts. With a username, recruiters sign in as
+     * "username + password" and no email has to exist (requires Username enabled in the
+     * Clerk dashboard and email not marked as required). {@code email} is optional and,
+     * when given, is attached as a verified address. {@code skip_password_checks} lets
+     * the configured password through Clerk's breach and strength checks so seeding never
+     * fails on it. Existing sessions are signed out when the password is reset, so a
+     * nightly reset also ends any interviewer's session.
+     *
+     * @throws IllegalStateException if Clerk is not configured or the API call fails
+     */
+    public String ensureUserWithPassword(String username, String email, String password,
+                                         String firstName, String lastName) {
+        boolean hasUsername = username != null && !username.isBlank();
+        boolean hasEmail = email != null && !email.isBlank();
+        String label = hasUsername ? username : email;
+        if (secretKey.isBlank()) {
+            throw new IllegalStateException("CLERK_SECRET_KEY is not configured");
+        }
+        if (!hasUsername && !hasEmail) {
+            throw new IllegalStateException("A demo account needs a username or an email");
+        }
+        if (password == null || password.isBlank()) {
+            throw new IllegalStateException("No password configured for demo account " + label);
+        }
+        try {
+            Optional<String> existing = hasUsername ? findUserId("username", username) : findUserId("email_address", email);
+            if (existing.isPresent()) {
+                var body = mapper.createObjectNode()
+                        .put("password", password)
+                        .put("skip_password_checks", true)
+                        .put("sign_out_of_other_sessions", true);
+                send("PATCH", BASE + existing.get(), body.toString());
+                return existing.get();
+            }
+            var body = mapper.createObjectNode();
+            if (hasUsername) {
+                body.put("username", username);
+            }
+            if (hasEmail) {
+                body.putArray("email_address").add(email);
+            }
+            body.put("password", password);
+            body.put("skip_password_checks", true);
+            body.put("first_name", firstName);
+            body.put("last_name", lastName);
+            JsonNode created = mapper.readTree(send("POST", BASE.substring(0, BASE.length() - 1), body.toString()));
+            return created.path("id").asText();
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException("Clerk demo account setup failed for " + label + ": " + e.getMessage(), e);
+        }
+    }
+
+    /** Finds a user id via the List users endpoint filter ({@code username} or {@code email_address}). */
+    private Optional<String> findUserId(String filter, String value) throws Exception {
+        String url = BASE.substring(0, BASE.length() - 1) + "?" + filter + "="
+                + java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
+        JsonNode list = mapper.readTree(send("GET", url, null));
+        if (list.isArray() && !list.isEmpty()) {
+            return Optional.ofNullable(list.get(0).path("id").asText(null));
+        }
+        return Optional.empty();
+    }
+
+    private String send(String method, String url, String jsonBody) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
+                .header("Authorization", "Bearer " + secretKey)
+                .header("Accept", "application/json")
+                .timeout(Duration.ofSeconds(10));
+        if (jsonBody == null) {
+            builder.method(method, HttpRequest.BodyPublishers.noBody());
+        } else {
+            builder.header("Content-Type", "application/json")
+                    .method(method, HttpRequest.BodyPublishers.ofString(jsonBody));
+        }
+        HttpResponse<String> response = http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() / 100 != 2) {
+            // Clerk error bodies describe the problem (e.g. password strategy disabled);
+            // they never echo the password back.
+            throw new IllegalStateException("Clerk " + method + " returned HTTP " + response.statusCode()
+                    + ": " + abbreviate(response.body()));
+        }
+        return response.body();
+    }
+
+    private static String abbreviate(String body) {
+        if (body == null) {
+            return "";
+        }
+        return body.length() > 500 ? body.substring(0, 500) + "..." : body;
+    }
+
     private static String primaryEmail(JsonNode root) {
         String primaryId = root.path("primary_email_address_id").asText(null);
         String fallback = null;

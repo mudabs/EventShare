@@ -15,14 +15,20 @@ public record MediaResponse(
         String status,
         String moderationState,
         String uploaderDisplayName,
-    Long sizeBytes,
+        Long sizeBytes,
         Integer width,
         Integer height,
         BigDecimal durationSeconds,
         boolean duplicate,
         Instant createdAt,
         String originalUrl,
-        String thumbnailUrl
+        String thumbnailUrl,
+        /*
+         * True when the caller's X-Membership-Id header matches the membership that
+         * uploaded this item. The guest UI uses it to decide whether to show "Delete".
+         * Replaces the old client-side display-name comparison (change C2).
+         */
+        boolean ownedByRequester
 ) {
     public static MediaResponse from(Media media, String originalUrl, String thumbnailUrl) {
         return new MediaResponse(
@@ -41,13 +47,21 @@ public record MediaResponse(
                 media.isDuplicate(),
                 media.getCreatedAt(),
                 originalUrl,
-                thumbnailUrl);
+                thumbnailUrl,
+                false);
     }
 
     /** A copy with uploader identity removed (for anonymous-mode galleries). */
     public MediaResponse withoutUploader() {
         return new MediaResponse(id, eventId, mediaType, contentType, originalFilename, status,
                 moderationState, null, sizeBytes, width, height, durationSeconds, duplicate, createdAt,
-                originalUrl, thumbnailUrl);
+                originalUrl, thumbnailUrl, ownedByRequester);
+    }
+
+    /** A copy with the ownership flag set for the requesting guest. */
+    public MediaResponse withOwnedByRequester(boolean owned) {
+        return new MediaResponse(id, eventId, mediaType, contentType, originalFilename, status,
+                moderationState, uploaderDisplayName, sizeBytes, width, height, durationSeconds,
+                duplicate, createdAt, originalUrl, thumbnailUrl, owned);
     }
 }

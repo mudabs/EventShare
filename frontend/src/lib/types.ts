@@ -76,6 +76,8 @@ export interface MediaItem {
   createdAt: string;
   originalUrl: string;
   thumbnailUrl: string | null;
+  /** True when the X-Membership-Id sent with the gallery request uploaded this item. */
+  ownedByRequester: boolean;
 }
 
 export interface GalleryPage {
@@ -210,3 +212,24 @@ export interface AdminPerformance {
 }
 export interface PromoCode { id: string; code: string; type: string; valueNumeric: number | null; grantsPlanCode: string | null; durationDays: number | null; maxRedemptions: number | null; redemptionsUsed: number; expiresAt: string | null; active: boolean; }
 export interface WhitelistEntry { id: string; email: string; note: string | null; active: boolean; createdAt: string; }
+
+/** GET /api/demo/info. Only `enabled` is present when demo mode is off. */
+export interface DemoInfo {
+  enabled: boolean;
+  inviteCode?: string;
+  secondaryInviteCode?: string;
+  promoCode?: string;
+  guestUrl?: string;
+  resetCron?: string;
+  resetZone?: string;
+  /** Present only when the server sets DEMO_SHOW_CREDENTIALS=true. */
+  logins?: { role: string; username: string; password: string }[];
+}
+
+export interface DemoResetResult {
+  trigger: string;
+  finishedAt: string;
+  photosSeeded: number;
+  oldObjectsRemoved: number;
+  durationMs: number;
+}

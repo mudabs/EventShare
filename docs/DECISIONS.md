@@ -62,6 +62,8 @@ handles cleanly.
 
 ## ADR-005: Asynchronous processing over RabbitMQ with a dead-letter queue
 
+Status. Superseded by ADR-013 (processing now runs in-process). Kept for history.
+
 Context. Thumbnailing and metadata extraction are slow and occasionally fail (unsupported
 formats, transient storage errors). They must not block the upload acknowledgement.
 
@@ -144,3 +146,61 @@ Decision. A whitelist table grants an effective unlimited plan, resolved in Plan
 Quotas (events, per-event uploads, account storage) are checked with live aggregation queries at
 the point of action. Consequences. Correct and simple at current scale. If aggregation becomes hot,
 the event_analytics and storage_usage tables are already in place to switch to maintained rollups.
+
+## ADR-013: In-process media processing with the media table as the queue
+
+Status. Accepted (recorded 2026-10-05; the code change predates this record).
+Context. On one small VPS the RabbitMQ broker and separate worker doubled the moving parts
+without adding capacity. Decision. The API runs a `@Scheduled` poller; `media.status`
+(UPLOADED, PROCESSING, PROCESSED, FAILED) is the queue. Consequences. One fewer service to
+deploy and monitor. Processing shares CPU with request handling, so batch size stays small.
+The worker and broker config are retained in the repo for later reintroduction.
+
+## ADR-014: Row locks for quota checks and work claiming
+
+Status. Accepted 2026-10-05. Context. Two check-then-act races existed: parallel upload
+requests could all pass the plan-limit count before any inserted, and two API replicas could
+claim the same media row for processing. Decision. (a) Lock the host `users` row with
+`SELECT ... FOR UPDATE` and run the plan check and the PENDING insert in the same
+transaction. (b) Claim processing work with one `UPDATE ... WHERE id IN (SELECT ... FOR
+UPDATE SKIP LOCKED) RETURNING id` statement. Consequences. Upload-URL requests for one host
+are serialised for a few milliseconds each, which is negligible at event scale. Locking per
+host (not per event) is required because the storage cap spans all of a host's events.
+Alternatives considered: a counter table with conditional `UPDATE ... WHERE used < limit`
+(faster under very high contention, but needs backfill and reconciliation), and
+SERIALIZABLE isolation (correct but turns contention into retries the client must handle).
+
+## ADR-015: Rate limiter stays in-process for now
+
+Status. Accepted 2026-10-05. Context. `RateLimiter` keeps fixed-window counters in memory,
+so limits are per replica. Decision. Keep it while production runs one API replica; adopt
+Redis (or Bucket4j with a shared store) as part of the change that adds a second replica.
+Consequences. No new infrastructure today. The limitation is documented in ARCHITECTURE.md
+so it is not forgotten when scaling.
+
+## ADR-016: Guest membership id is the guest's credential
+
+Status. Accepted 2026-10-05. Context. Guest self-delete accepted either the uploader's
+membership id or a matching display name. Names are shown in the gallery, so anyone could
+delete anyone's media. Decision. Only an ACTIVE membership id matching the media's
+`uploader_membership_id` authorises self-delete. Upload requests that carry a membership id
+must reference an ACTIVE membership of the same event, and the uploader name is copied from
+the membership. The gallery reports ownership via `ownedByRequester` computed from an
+`X-Membership-Id` header, so the id is never exposed to other guests. Consequences. Media
+uploaded before joining (no membership) can only be removed by the host. Membership ids must
+be treated as secrets by clients (they live in the guest's local storage).
+
+## ADR-017: Demo mode seeds real Clerk accounts and resets only demo-owned data
+
+Status. Accepted 2026-10-05. Context. The app doubles as an interview demo and needs logins
+that always work and identical showcase data every time, locally and on the live site.
+Decision. A `demo` module, off by default, creates or re-passwords demo users through the
+Clerk Backend API (no authentication bypass), seeds two events with server-generated photos
+that go through the normal processing pipeline, and resets nightly. A reset deletes only
+events hosted by demo accounts, under a PostgreSQL advisory lock, uploading new objects
+before the transaction and deleting old ones after commit. Passwords come only from the
+environment. Consequences. The demo shows the real sign-in flow and real pipeline. It
+depends on Clerk and R2 being configured. The demo admin and public credential display are
+opt-in because the admin panel exposes real accounts on a live site. Alternatives
+considered: a Flyway seed migration (cannot create Clerk users or R2 objects, and would run
+in production), and an auth-bypass "demo login" (a standing back door).

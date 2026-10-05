@@ -41,11 +41,19 @@ public class R2StorageService {
         this.r2 = props.r2();
     }
 
-    public String presignUpload(String objectKey, String contentType) {
+    /**
+     * Presigns a single-object PUT. The declared {@code contentLength} is included in
+     * the SigV4 signed headers, so R2 rejects (403 SignatureDoesNotMatch) any upload
+     * whose body size differs from what the client declared and the API validated.
+     * Without this, a client could declare 1 MB, pass the size/quota checks, and then
+     * PUT an arbitrarily large object. See docs/changes/2026-10-05-security-and-correctness-hardening.md (C1).
+     */
+    public String presignUpload(String objectKey, String contentType, long contentLength) {
         PutObjectRequest put = PutObjectRequest.builder()
                 .bucket(r2.bucket())
                 .key(objectKey)
                 .contentType(contentType)
+                .contentLength(contentLength)
                 .build();
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofSeconds(r2.presignUploadTtlSeconds()))
@@ -109,6 +117,17 @@ public class R2StorageService {
                 GetObjectRequest.builder().bucket(r2.bucket()).key(objectKey).build(),
                 ResponseTransformer.toFile(target));
         return target;
+    }
+
+    /** Uploads an in-memory object (used by the demo seeder for generated photos). */
+    public void uploadBytes(byte[] bytes, String objectKey, String contentType) {
+        s3Client.putObject(
+                PutObjectRequest.builder()
+                        .bucket(r2.bucket())
+                        .key(objectKey)
+                        .contentType(contentType)
+                        .build(),
+                RequestBody.fromBytes(bytes));
     }
 
     /** Uploads a local file to R2 under the given key and content type. */
