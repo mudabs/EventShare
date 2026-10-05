@@ -22,6 +22,11 @@ echo "[deploy] building and starting services"
 docker compose "${COMPOSE_ARGS[@]}" build
 docker compose "${COMPOSE_ARGS[@]}" up -d --remove-orphans
 
+# The API container can receive a new Docker-network IP when it is rebuilt.
+# Restart the edge proxy so its upstream resolution cannot remain stale.
+echo "[deploy] refreshing edge proxy"
+docker compose "${COMPOSE_ARGS[@]}" restart nginx
+
 echo "[deploy] waiting for services"
 docker compose "${COMPOSE_ARGS[@]}" ps
 

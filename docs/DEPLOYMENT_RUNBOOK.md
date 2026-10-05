@@ -178,6 +178,8 @@ bash scripts/deploy-prod.sh
 
 The script fast-forwards the checkout, builds the API and frontend images, starts the production
 services, waits for PostgreSQL, checks the vps01 edge endpoint, and prunes unused Docker images.
+It also restarts the Nginx edge container after application rebuilds so a changed API container
+address cannot leave the proxy using a stale upstream address.
 
 Check service state and the local API:
 
