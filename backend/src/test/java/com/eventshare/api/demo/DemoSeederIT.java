@@ -14,8 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -54,9 +52,12 @@ import static org.mockito.Mockito.when;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = {
         "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.flyway.enabled=true"
+        "spring.flyway.enabled=true",
+        "eventshare.demo.enabled=true",
+        "eventshare.demo.admin-enabled=true",
+        "eventshare.demo.photo-count=10"
 })
-@Import({DemoSeeder.class, DemoSeederIT.Config.class})
+@Import(DemoSeeder.class)
 @Testcontainers
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class DemoSeederIT {
@@ -71,18 +72,8 @@ class DemoSeederIT {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-    }
-
-    @TestConfiguration
-    static class Config {
-        @Bean
-        DemoProperties demoProperties() {
-            return new DemoProperties(true,
-                    "demo-host", null, "Host-Pass-123", "Demo Host",
-                    true, "demo-admin", null, "Admin-Pass-123", "Demo Admin",
-                    "EVENTSHARE", "TEAMDAY26X", "INTERVIEW30", PHOTOS,
-                    "0 0 4 * * *", "America/Chicago", false);
-        }
+        registry.add("eventshare.demo.host-password", () -> "Host-Pass-123");
+        registry.add("eventshare.demo.admin-password", () -> "Admin-Pass-123");
     }
 
     @MockitoBean ClerkUserClient clerk;
