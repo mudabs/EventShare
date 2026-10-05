@@ -1,6 +1,7 @@
 package com.eventshare.api;
 
 import com.eventshare.api.config.AppProperties;
+import com.eventshare.api.demo.DemoProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -12,7 +13,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  * in-process via a status-driven scheduler rather than a separate worker.
  */
 @SpringBootApplication
-@EnableConfigurationProperties(AppProperties.class)
+@EnableConfigurationProperties({AppProperties.class, DemoProperties.class})
 public class EventShareApplication {
     public static void main(String[] args) {
         SpringApplication.run(EventShareApplication.class, args);

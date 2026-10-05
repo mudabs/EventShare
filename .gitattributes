@@ -1,0 +1,17 @@
+# Normalise line endings in the repository to LF. Windows checkouts may still show CRLF in
+# the working tree, but `git status` stops reporting whole-file changes caused only by
+# line endings. Windows-only scripts keep CRLF.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary

@@ -58,6 +58,35 @@ MEDIA_ALLOWED_CONTENT_TYPES. Comma-separated allowed MIME types. Used by: api.
 GRAFANA_ADMIN_USER, GRAFANA_ADMIN_PASSWORD. Grafana admin login.
 JAVA_OPTS. JVM flags for api, for example `-XX:MaxRAMPercentage=70`.
 
+## Platform administration
+
+ADMIN_EMAILS, ADMIN_CLERK_USER_IDS. Accounts auto-granted ADMIN at sign-in. Used by: api.
+DEMO_EMAILS. Emails that always get unlimited plan limits. Used by: api.
+
+## Interview demo mode
+
+All optional; see `docs/DEMO.md`. Used by: api. Off unless `DEMO_ENABLED=true`.
+
+DEMO_ENABLED. Master switch for seeding, nightly reset, and the demo endpoints.
+DEMO_HOST_USERNAME, DEMO_HOST_PASSWORD, DEMO_HOST_NAME. Demo host login (username default
+`demo-host`). The password has no default; the API sets it on the Clerk account at startup
+and at every reset.
+DEMO_HOST_EMAIL. Optional. Leave blank for a username-only login; set it only if your Clerk
+instance requires an email.
+DEMO_ADMIN_ENABLED, DEMO_ADMIN_USERNAME, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD,
+DEMO_ADMIN_NAME. Optional demo platform admin (username default `demo-admin`). Keep
+`DEMO_ADMIN_ENABLED=false` on a site with real users.
+DEMO_INVITE_CODE, DEMO_SECONDARY_INVITE_CODE. Fixed invite codes of the two demo events
+(default `EVENTSHARE`, `TEAMDAY26X`).
+DEMO_PROMO_CODE. Demo promo code granting Wedding Pro for 30 days (default `INTERVIEW30`).
+DEMO_PHOTO_COUNT. Generated photos in the main event (default 18, max 60).
+DEMO_RESET_CRON, DEMO_RESET_ZONE. Spring cron and zone for the automatic reset (default
+`0 0 4 * * *`, `America/Chicago`).
+DEMO_SHOW_CREDENTIALS. When true, `GET /api/demo/info` and the landing page show the demo
+logins.
+EVENTSHARE_HTTP_PORT. Host port for the app's nginx on 127.0.0.1 (default 8088; the local
+demo uses 8090). Used by: docker compose.
+
 ## CI/CD
 
 VPS_APP_DIR. Optional environment variable on the `vps01` self-hosted runner; defaults to

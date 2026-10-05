@@ -74,6 +74,8 @@ public class SecurityConfig {
                         .access((authentication, object) ->
                                 new org.springframework.security.authorization.AuthorizationDecision(localDevOpenApiEnabled))
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/plans").permitAll()
+                        // Demo mode status and guest link (docs/DEMO.md); returns {enabled:false} when off.
+                        .requestMatchers(HttpMethod.GET, "/api/demo/info").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/billing/webhook").permitAll()
                         // Capability-based (invite code) guest endpoints:
                         .requestMatchers(HttpMethod.GET, "/api/events/code/**").permitAll()
@@ -151,7 +153,8 @@ public class SecurityConfig {
                 .toList();
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+        // X-Membership-Id: guest identity for gallery ownership flags (change C2).
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "X-Membership-Id"));
         config.setExposedHeaders(List.of("Location"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

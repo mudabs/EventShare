@@ -1,6 +1,6 @@
 import type {
   CompleteUploadRequest, CreateEventRequest, EventResponse, GalleryPage,
-  AdminEvent, AdminPerformance, AdminUser, EventSettings, JoinResponse, MediaItem, MemberView, ModerationState, MyEventCard, OwnerDashboard, Plan, PlatformStats, Profile, PromoCode, PublicEvent, Subscription, UserDashboard, WhitelistEntry, UploadUrlRequest, UploadUrlResponse
+  AdminEvent, AdminPerformance, DemoInfo, DemoResetResult, AdminUser, EventSettings, JoinResponse, MediaItem, MemberView, ModerationState, MyEventCard, OwnerDashboard, Plan, PlatformStats, Profile, PromoCode, PublicEvent, Subscription, UserDashboard, WhitelistEntry, UploadUrlRequest, UploadUrlResponse
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || '/api';
@@ -72,15 +72,18 @@ export const completeUpload = (mediaId: string, payload: CompleteUploadRequest) 
     body: JSON.stringify(payload)
   });
 
-export const fetchGallery = (code: string, cursor?: string | null, limit = 30) => {
+export const fetchGallery = (code: string, cursor?: string | null, limit = 30, membershipId?: string) => {
   const params = new URLSearchParams({ limit: String(limit) });
   if (cursor) {
     params.set('cursor', cursor);
   }
-  return request<GalleryPage>(`/events/code/${encodeURIComponent(code)}/media?${params.toString()}`);
+  // Optional guest identity: lets the API flag items this guest uploaded (ownedByRequester).
+  const headers: Record<string, string> = membershipId ? { 'X-Membership-Id': membershipId } : {};
+  return request<GalleryPage>(`/events/code/${encodeURIComponent(code)}/media?${params.toString()}`, { headers });
 };
 
-export const deleteOwnMedia = (code: string, mediaId: string, payload: { membershipId?: string; displayName?: string }) =>
+/** Guest self-delete. membershipId is the only credential the API accepts (change C2). */
+export const deleteOwnMedia = (code: string, mediaId: string, payload: { membershipId: string; displayName?: string }) =>
   request<void>(`/events/code/${encodeURIComponent(code)}/media/${encodeURIComponent(mediaId)}`, {
     method: 'DELETE',
     body: JSON.stringify(payload)
@@ -242,3 +245,10 @@ export const adminRemoveWhitelist = (token: string, id: string) =>
 
 export const fetchEvent = (token: string, id: string) =>
   request<EventResponse>(`/events/${encodeURIComponent(id)}`, { token });
+
+// ---- Demo mode (docs/DEMO.md) ----
+
+export const fetchDemoInfo = () => request<DemoInfo>(`/demo/info`);
+
+export const resetDemo = (token: string) =>
+  request<DemoResetResult>(`/admin/demo/reset`, { method: 'POST', token });

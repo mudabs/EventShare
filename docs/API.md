@@ -85,8 +85,13 @@ OTHER.
   "uploaderDisplayName": "Alice", "membershipId": "uuid" }
 ```
 
+`membershipId` is optional. When present it must be an ACTIVE membership of this event
+(403 otherwise), and the stored uploader name is taken from the membership instead of
+`uploaderDisplayName`. Plan limits are checked here (403 with code `quota_exceeded`).
+
 Response. Upload the bytes with an HTTP PUT to `uploadUrl`, setting `Content-Type` to
-`requiredContentType`.
+`requiredContentType`. The body must be exactly `sizeBytes` long: the URL signs
+`Content-Length`, so R2 returns 403 for any other size.
 
 ```json
 { "mediaId": "uuid", "objectKey": "events/.../originals/.../sunset.jpg",
@@ -102,20 +107,48 @@ Response. Upload the bytes with an HTTP PUT to `uploadUrl`, setting `Content-Typ
 { "sha256": "<64-hex>", "width": 4032, "height": 3024 }
 ```
 
-Confirms the object in R2, records the hash and size, runs exact duplicate detection, and
-publishes the processing event. Returns the media object with a signed `originalUrl`.
+Confirms the object in R2, records the hash and real size, runs exact duplicate detection,
+and leaves the row UPLOADED for the in-process processor. Returns the media object with a
+signed `originalUrl`. If the stored object is larger than the declared `sizeBytes`, the
+object is deleted, the media is marked FAILED/DELETED, and the call returns 400 with code
+`upload_rejected`.
 
 ### Gallery (guest)
 
 `GET /api/events/code/{code}/media?cursor={opaque}&limit={1..100}`  Public. Newest first.
+Optional header `X-Membership-Id: <uuid>`; when sent, each item's `ownedByRequester` is true
+for media uploaded by that membership.
 
 ```json
 { "items": [ { "id": "uuid", "mediaType": "PHOTO", "status": "PROCESSED",
     "moderationState": "VISIBLE", "uploaderDisplayName": "Alice",
     "width": 4032, "height": 3024, "duplicate": false, "createdAt": "...",
-    "originalUrl": "https://...signed...", "thumbnailUrl": "https://...signed..." } ],
+    "originalUrl": "https://...signed...", "thumbnailUrl": "https://...signed...",
+    "ownedByRequester": false } ],
   "nextCursor": "b64cursor", "hasMore": true }
 ```
+
+### Delete own media (guest)
+
+`DELETE /api/events/code/{code}/media/{mediaId}`  Public.
+
+```json
+{ "membershipId": "uuid", "displayName": "Alice" }
+```
+
+`membershipId` is required and must match the media's uploader membership and be ACTIVE;
+otherwise 403. `displayName` is ignored for authorisation (kept for older clients). The
+media is soft-deleted (moderation state DELETED).
+
+### Demo mode
+
+`GET /api/demo/info`  Public. `{ "enabled": false }` unless demo mode is on; otherwise also
+`inviteCode`, `secondaryInviteCode`, `promoCode`, `guestUrl`, `resetCron`, `resetZone`, and,
+only when `DEMO_SHOW_CREDENTIALS=true`, `logins: [{ role, email, password }]`.
+
+`POST /api/admin/demo/reset`  Admin. Deletes all demo-owned data and seeds it again.
+Returns `{ trigger, finishedAt, photosSeeded, oldObjectsRemoved, durationMs }`. 404 when
+demo mode is off. See `docs/DEMO.md`.
 
 ### System
 

@@ -60,3 +60,9 @@ DEPLOYMENT_MANUAL.md
 # Local credential inventories and secret material (never commit)
 private/
 DEPLOYMENT_SECRETS.local.md
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Local demo environment (generated secrets; template is .env.demo.example)
+.env.demo

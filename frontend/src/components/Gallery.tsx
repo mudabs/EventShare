@@ -22,11 +22,6 @@ function formatBytes(bytes: number | null) {
   return `${value.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
 }
 
-function isSameName(a?: string | null, b?: string | null) {
-  if (!a || !b) return false;
-  return a.trim().toLowerCase() === b.trim().toLowerCase();
-}
-
 export function Gallery({ code }: { code: string }) {
   const { confirm, toast } = useFeedback();
   const identity = useGuestStore((s) => s.identities[code]);
@@ -39,8 +34,9 @@ export function Gallery({ code }: { code: string }) {
   const {
     data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch
   } = useInfiniteQuery({
-    queryKey: queryKeys.gallery(code),
-    queryFn: ({ pageParam }) => fetchGallery(code, pageParam),
+    // membershipId is part of the key so ownership flags refresh when the guest joins.
+    queryKey: [...queryKeys.gallery(code), identity?.membershipId ?? null],
+    queryFn: ({ pageParam }) => fetchGallery(code, pageParam, 30, identity?.membershipId),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     // Lightweight near-real-time: re-poll the first page periodically.
@@ -78,10 +74,12 @@ export function Gallery({ code }: { code: string }) {
   const hasPrev = selectedIndex > 0;
   const hasNext = selectedIndex >= 0 && selectedIndex < items.length - 1;
 
-  const canDeleteSelected = useMemo(() => {
-    if (!selected || !identity?.displayName) return false;
-    return isSameName(identity.displayName, selected.uploaderDisplayName);
-  }, [identity?.displayName, selected]);
+  // Ownership is decided by the API from the guest's membership id (change C2).
+  // Matching on display name was removed because names are public and not unique.
+  const canDeleteSelected = useMemo(
+    () => Boolean(selected?.ownedByRequester && identity?.membershipId),
+    [identity?.membershipId, selected]
+  );
 
   function showPrevious() {
     if (!hasPrev) return;
@@ -147,7 +145,7 @@ export function Gallery({ code }: { code: string }) {
       let loops = 0;
 
       do {
-        const page = await fetchGallery(code, cursor, 100);
+        const page = await fetchGallery(code, cursor, 100, identity?.membershipId);
         for (const item of page.items) {
           if (!seen.has(item.id)) {
             seen.add(item.id);
@@ -191,7 +189,7 @@ export function Gallery({ code }: { code: string }) {
   }
 
   async function handleDeleteSelected() {
-    if (!selected || !identity) return;
+    if (!selected || !identity?.membershipId) return;
     const accepted = await confirm({
       title: 'Delete this image?',
       message: 'This will remove it from the shared gallery.',

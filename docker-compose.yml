@@ -64,6 +64,27 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       APP_BASE_URL: ${APP_BASE_URL}
       ADMIN_EMAILS: ${ADMIN_EMAILS}
+      # These two were documented in the README but never passed to the container.
+      ADMIN_CLERK_USER_IDS: ${ADMIN_CLERK_USER_IDS:-}
+      DEMO_EMAILS: ${DEMO_EMAILS:-}
+      # Interview/demo mode (docs/DEMO.md). Off unless DEMO_ENABLED=true.
+      DEMO_ENABLED: ${DEMO_ENABLED:-false}
+      DEMO_HOST_USERNAME: ${DEMO_HOST_USERNAME:-}
+      DEMO_HOST_EMAIL: ${DEMO_HOST_EMAIL:-}
+      DEMO_HOST_PASSWORD: ${DEMO_HOST_PASSWORD:-}
+      DEMO_HOST_NAME: ${DEMO_HOST_NAME:-}
+      DEMO_ADMIN_ENABLED: ${DEMO_ADMIN_ENABLED:-false}
+      DEMO_ADMIN_USERNAME: ${DEMO_ADMIN_USERNAME:-}
+      DEMO_ADMIN_EMAIL: ${DEMO_ADMIN_EMAIL:-}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-}
+      DEMO_ADMIN_NAME: ${DEMO_ADMIN_NAME:-}
+      DEMO_INVITE_CODE: ${DEMO_INVITE_CODE:-}
+      DEMO_SECONDARY_INVITE_CODE: ${DEMO_SECONDARY_INVITE_CODE:-}
+      DEMO_PROMO_CODE: ${DEMO_PROMO_CODE:-}
+      DEMO_PHOTO_COUNT: ${DEMO_PHOTO_COUNT:-18}
+      DEMO_RESET_CRON: ${DEMO_RESET_CRON:-0 0 4 * * *}
+      DEMO_RESET_ZONE: ${DEMO_RESET_ZONE:-America/Chicago}
+      DEMO_SHOW_CREDENTIALS: ${DEMO_SHOW_CREDENTIALS:-false}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       STRIPE_PRICE_BASIC: ${STRIPE_PRICE_BASIC}
@@ -127,7 +148,8 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8088:80"
+      # EVENTSHARE_HTTP_PORT lets the local demo stack (port 8090) run beside the dev stack.
+      - "127.0.0.1:${EVENTSHARE_HTTP_PORT:-8088}:80"
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro

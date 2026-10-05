@@ -2,17 +2,26 @@ package com.eventshare.api.media;
 
 import com.eventshare.api.audit.AuditService;
 import com.eventshare.api.common.error.BadRequestException;
+import com.eventshare.api.common.error.ForbiddenException;
+import com.eventshare.api.common.error.QuotaExceededException;
 import com.eventshare.api.common.error.TooManyRequestsException;
+import com.eventshare.api.common.error.UploadRejectedException;
 import com.eventshare.api.config.AppProperties;
 import com.eventshare.api.event.Event;
 import com.eventshare.api.event.EventMembershipRepository;
 import com.eventshare.api.event.EventRepository;
+import com.eventshare.api.event.EventMembership;
 import com.eventshare.api.event.EventStatus;
+import com.eventshare.api.event.MembershipStatus;
 import com.eventshare.api.media.dto.CompleteUploadRequest;
+import com.eventshare.api.media.dto.DeleteOwnMediaRequest;
+import com.eventshare.api.media.dto.GalleryPageResponse;
 import com.eventshare.api.media.dto.MediaResponse;
 import com.eventshare.api.media.dto.UploadUrlRequest;
 import com.eventshare.api.media.dto.UploadUrlResponse;
 import com.eventshare.api.media.r2.R2StorageService;
+import com.eventshare.api.subscription.PlanLimitService;
+import com.eventshare.api.user.UserRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +34,7 @@ import org.mockito.quality.Strictness;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,7 +42,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,6 +61,8 @@ class MediaServiceTest {
     @Mock R2StorageService storage;
     @Mock AuditService audit;
     @Mock com.eventshare.api.common.util.RateLimiter rateLimiter;
+    @Mock UserRepository users;
+    @Mock PlanLimitService planLimits;
 
     MediaService service;
 
@@ -64,6 +80,7 @@ class MediaServiceTest {
     private Event activeEvent(boolean autoApprove) {
         Event event = new Event();
         event.setId(UUID.randomUUID());
+        event.setHostId(UUID.randomUUID());
         event.setInviteCode("CODE123456");
         event.setStatus(EventStatus.ACTIVE);
         event.setAutoApprove(autoApprove);
@@ -73,7 +90,7 @@ class MediaServiceTest {
     @BeforeEach
     void setUp() {
         service = new MediaService(media, events, memberships, storage, audit, rateLimiter, props(),
-                new SimpleMeterRegistry());
+                new SimpleMeterRegistry(), users, planLimits);
         when(rateLimiter.tryAcquire(any(), anyInt())).thenReturn(true);
         when(media.save(any(Media.class))).thenAnswer(i -> i.getArgument(0));
         when(storage.presignDownload(anyString())).thenReturn("https://r2.example/dl");
@@ -111,7 +128,7 @@ class MediaServiceTest {
     void requestUploadUrlReservesPendingMediaAndPresigns() {
         Event event = activeEvent(true);
         when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
-        when(storage.presignUpload(anyString(), anyString())).thenReturn("https://r2.example/put");
+        when(storage.presignUpload(anyString(), anyString(), anyLong())).thenReturn("https://r2.example/put");
 
         UploadUrlRequest request = new UploadUrlRequest(
                 "CODE123456", "sunset.jpg", "image/jpeg", 500L, "Guest", null);
@@ -126,6 +143,179 @@ class MediaServiceTest {
         assertThat(captor.getValue().getStatus()).isEqualTo(MediaStatus.PENDING);
         assertThat(captor.getValue().getModerationState()).isEqualTo(ModerationState.VISIBLE);
         assertThat(captor.getValue().getMediaType()).isEqualTo(MediaType.PHOTO);
+        // C1: the presigned URL signs the declared byte count.
+        verify(storage).presignUpload(anyString(), eq("image/jpeg"), eq(500L));
+    }
+
+    // ---- C3: plan limits checked inside the transaction, after locking the host row ----
+
+    @Test
+    void requestUploadUrlLocksHostBeforeCheckingPlanLimits() {
+        Event event = activeEvent(true);
+        when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
+        when(storage.presignUpload(anyString(), anyString(), anyLong())).thenReturn("https://r2.example/put");
+
+        service.requestUploadUrl(new UploadUrlRequest(
+                "CODE123456", "a.jpg", "image/jpeg", 100L, "Guest", null), "203.0.113.1");
+
+        var order = inOrder(users, planLimits, media);
+        order.verify(users).findByIdForUpdate(event.getHostId());
+        order.verify(planLimits).checkCanUpload(event, MediaType.PHOTO, 100L);
+        order.verify(media).save(any(Media.class));
+    }
+
+    @Test
+    void requestUploadUrlDoesNotReserveWhenQuotaExceeded() {
+        Event event = activeEvent(true);
+        when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
+        doThrow(new QuotaExceededException("limit")).when(planLimits)
+                .checkCanUpload(any(), any(), anyLong());
+
+        assertThatThrownBy(() -> service.requestUploadUrl(new UploadUrlRequest(
+                "CODE123456", "a.jpg", "image/jpeg", 100L, "Guest", null), "203.0.113.1"))
+                .isInstanceOf(QuotaExceededException.class);
+        verify(media, never()).save(any(Media.class));
+        verify(storage, never()).presignUpload(anyString(), anyString(), anyLong());
+    }
+
+    // ---- C4: membership supplied on upload must be valid for the event ----
+
+    @Test
+    void requestUploadUrlRejectsMembershipFromAnotherEventOrInactive() {
+        Event event = activeEvent(true);
+        UUID foreignMembership = UUID.randomUUID();
+        when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
+        when(memberships.findByIdAndEventIdAndStatus(foreignMembership, event.getId(), MembershipStatus.ACTIVE))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.requestUploadUrl(new UploadUrlRequest(
+                "CODE123456", "a.jpg", "image/jpeg", 100L, "Guest", foreignMembership), "203.0.113.1"))
+                .isInstanceOf(ForbiddenException.class);
+        verify(media, never()).save(any(Media.class));
+    }
+
+    @Test
+    void requestUploadUrlTakesUploaderNameFromMembershipNotRequest() {
+        Event event = activeEvent(true);
+        EventMembership membership = new EventMembership();
+        membership.setId(UUID.randomUUID());
+        membership.setEventId(event.getId());
+        membership.setGuestDisplayName("Real Name");
+        when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
+        when(memberships.findByIdAndEventIdAndStatus(membership.getId(), event.getId(), MembershipStatus.ACTIVE))
+                .thenReturn(Optional.of(membership));
+        when(storage.presignUpload(anyString(), anyString(), anyLong())).thenReturn("https://r2.example/put");
+
+        service.requestUploadUrl(new UploadUrlRequest(
+                "CODE123456", "a.jpg", "image/jpeg", 100L, "Spoofed Name", membership.getId()), "203.0.113.1");
+
+        ArgumentCaptor<Media> captor = ArgumentCaptor.forClass(Media.class);
+        verify(media).save(captor.capture());
+        assertThat(captor.getValue().getUploaderDisplayName()).isEqualTo("Real Name");
+        assertThat(captor.getValue().getUploaderMembershipId()).isEqualTo(membership.getId());
+    }
+
+    // ---- C1: object larger than declared is rejected at completion ----
+
+    @Test
+    void completeUploadRejectsObjectLargerThanDeclared() {
+        Media pending = pendingMedia(UUID.randomUUID(), 100L);
+        when(media.findById(pending.getId())).thenReturn(Optional.of(pending));
+        when(storage.headObject(pending.getObjectKey()))
+                .thenReturn(Optional.of(HeadObjectResponse.builder().contentLength(5_000_000L).build()));
+
+        assertThatThrownBy(() -> service.completeUpload(
+                pending.getId(), new CompleteUploadRequest("a".repeat(64), null, null), "203.0.113.1"))
+                .isInstanceOf(UploadRejectedException.class);
+
+        verify(storage).deleteObject(pending.getObjectKey());
+        assertThat(pending.getStatus()).isEqualTo(MediaStatus.FAILED);
+        assertThat(pending.getModerationState()).isEqualTo(ModerationState.DELETED);
+    }
+
+    // ---- C2: self-delete is authorised by membership id only ----
+
+    @Test
+    void deleteOwnMediaRejectsDisplayNameOnlyRequests() {
+        Event event = activeEvent(true);
+        Media item = pendingMedia(event.getId(), 10L);
+        item.setUploaderMembershipId(UUID.randomUUID());
+        item.setUploaderDisplayName("Alice");
+        when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
+        when(media.findByIdAndEventId(item.getId(), event.getId())).thenReturn(Optional.of(item));
+
+        // Attacker knows the public uploader name but not the membership id.
+        assertThatThrownBy(() -> service.deleteOwnMedia("CODE123456", item.getId(),
+                new DeleteOwnMediaRequest(UUID.randomUUID(), "Alice"), "203.0.113.9"))
+                .isInstanceOf(ForbiddenException.class);
+        assertThat(item.getModerationState()).isNotEqualTo(ModerationState.DELETED);
+    }
+
+    @Test
+    void deleteOwnMediaRejectsMediaWithoutUploaderMembership() {
+        Event event = activeEvent(true);
+        Media item = pendingMedia(event.getId(), 10L);
+        item.setUploaderDisplayName("Alice");
+        when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
+        when(media.findByIdAndEventId(item.getId(), event.getId())).thenReturn(Optional.of(item));
+
+        assertThatThrownBy(() -> service.deleteOwnMedia("CODE123456", item.getId(),
+                new DeleteOwnMediaRequest(UUID.randomUUID(), "Alice"), "203.0.113.9"))
+                .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void deleteOwnMediaAllowsActiveUploaderMembership() {
+        Event event = activeEvent(true);
+        Media item = pendingMedia(event.getId(), 10L);
+        UUID membershipId = UUID.randomUUID();
+        item.setUploaderMembershipId(membershipId);
+        EventMembership membership = new EventMembership();
+        membership.setId(membershipId);
+        membership.setEventId(event.getId());
+        membership.setGuestDisplayName("Alice");
+        when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
+        when(media.findByIdAndEventId(item.getId(), event.getId())).thenReturn(Optional.of(item));
+        when(memberships.findByIdAndEventIdAndStatus(membershipId, event.getId(), MembershipStatus.ACTIVE))
+                .thenReturn(Optional.of(membership));
+
+        service.deleteOwnMedia("CODE123456", item.getId(),
+                new DeleteOwnMediaRequest(membershipId, null), "203.0.113.9");
+
+        assertThat(item.getModerationState()).isEqualTo(ModerationState.DELETED);
+    }
+
+    @Test
+    void galleryFlagsOnlyItemsOwnedByRequester() {
+        Event event = activeEvent(true);
+        event.setShowUploaderNames(true);
+        UUID mine = UUID.randomUUID();
+        Media own = pendingMedia(event.getId(), 1L);
+        own.setUploaderMembershipId(mine);
+        own.setCreatedAt(Instant.now());
+        Media other = pendingMedia(event.getId(), 1L);
+        other.setUploaderMembershipId(UUID.randomUUID());
+        other.setCreatedAt(Instant.now());
+        when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
+        when(media.findGalleryFirstPage(eq(event.getId()), eq(ModerationState.VISIBLE), any()))
+                .thenReturn(List.of(own, other));
+
+        GalleryPageResponse page = service.gallery("CODE123456", null, 10, mine);
+
+        assertThat(page.items()).extracting(MediaResponse::ownedByRequester).containsExactly(true, false);
+    }
+
+    private static Media pendingMedia(UUID eventId, long declaredBytes) {
+        Media m = new Media();
+        m.setId(UUID.randomUUID());
+        m.setEventId(eventId);
+        m.setObjectKey("events/" + eventId + "/originals/" + UUID.randomUUID() + "/f.jpg");
+        m.setContentType("image/jpeg");
+        m.setMediaType(MediaType.PHOTO);
+        m.setStatus(MediaStatus.PENDING);
+        m.setModerationState(ModerationState.VISIBLE);
+        m.setSizeBytes(declaredBytes);
+        return m;
     }
 
     @Test

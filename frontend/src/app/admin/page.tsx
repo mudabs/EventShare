@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/nextjs';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AdminAnalytics } from '@/components/AdminAnalytics';
+import { AdminDemo } from '@/components/AdminDemo';
 import { AdminEvents } from '@/components/AdminEvents';
 import { AdminPerformance } from '@/components/AdminPerformance';
 import { AdminPromo } from '@/components/AdminPromo';
@@ -12,14 +13,15 @@ import { AdminWhitelist } from '@/components/AdminWhitelist';
 import { Header } from '@/components/Header';
 import { fetchProfile } from '@/lib/api';
 
-type Tab = 'users' | 'events' | 'promo' | 'whitelist' | 'analytics' | 'performance';
+type Tab = 'users' | 'events' | 'promo' | 'whitelist' | 'analytics' | 'performance' | 'demo';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'users', label: 'Users' },
   { id: 'events', label: 'Events' },
   { id: 'promo', label: 'Promo' },
   { id: 'whitelist', label: 'Whitelist' },
   { id: 'analytics', label: 'Analytics' },
-  { id: 'performance', label: 'Performance' }
+  { id: 'performance', label: 'Performance' },
+  { id: 'demo', label: 'Demo' }
 ];
 
 export default function AdminPage() {
@@ -58,6 +60,7 @@ export default function AdminPage() {
             {tab === 'whitelist' && <AdminWhitelist />}
             {tab === 'analytics' && <AdminAnalytics />}
             {tab === 'performance' && <AdminPerformance />}
+            {tab === 'demo' && <AdminDemo />}
           </>
         )}
       </main>

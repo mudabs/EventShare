@@ -60,7 +60,8 @@ export default function EventScreen() {
         inviteCode: eventCode,
         filename: picked.fileName,
         contentType: picked.contentType,
-        sizeBytes: picked.sizeBytes,
+        // Declare the exact byte count we will PUT: the presigned URL signs Content-Length.
+        sizeBytes: bytes.byteLength,
         uploaderDisplayName: session?.displayName,
         membershipId: session?.membershipId,
       });

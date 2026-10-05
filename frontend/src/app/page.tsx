@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Header } from '@/components/Header';
+import { DemoBanner } from '@/components/DemoBanner';
 import { JoinByCodeForm } from '@/components/JoinByCodeForm';
 import { PhotoSlot } from '@/components/PhotoSlot';
 import { HeroScene, StepCreate, StepShare, StepGallery } from '@/components/illustrations';
@@ -49,6 +50,9 @@ export default function HomePage() {
               <span className="text-sm text-ink/50">Got a code from a host?</span>
               <JoinByCodeForm />
             </div>
+
+            {/* Shown only when the API runs in demo mode (docs/DEMO.md). */}
+            <DemoBanner />
           </div>
 
           <HeroScene className="mx-auto mt-12 w-full max-w-md" />

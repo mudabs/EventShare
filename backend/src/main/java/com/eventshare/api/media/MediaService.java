@@ -5,10 +5,12 @@ import com.eventshare.api.common.error.BadRequestException;
 import com.eventshare.api.common.error.ForbiddenException;
 import com.eventshare.api.common.error.NotFoundException;
 import com.eventshare.api.common.error.TooManyRequestsException;
+import com.eventshare.api.common.error.UploadRejectedException;
 import com.eventshare.api.common.util.ObjectKeys;
 import com.eventshare.api.common.util.RateLimiter;
 import com.eventshare.api.config.AppProperties;
 import com.eventshare.api.event.Event;
+import com.eventshare.api.event.EventMembership;
 import com.eventshare.api.event.EventMembershipRepository;
 import com.eventshare.api.event.EventRepository;
 import com.eventshare.api.event.MembershipStatus;
@@ -20,8 +22,12 @@ import com.eventshare.api.media.dto.MediaResponse;
 import com.eventshare.api.media.dto.UploadUrlRequest;
 import com.eventshare.api.media.dto.UploadUrlResponse;
 import com.eventshare.api.media.r2.R2StorageService;
+import com.eventshare.api.subscription.PlanLimitService;
+import com.eventshare.api.user.UserRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +46,8 @@ import java.util.stream.Collectors;
 @Service
 public class MediaService {
 
+    private static final Logger log = LoggerFactory.getLogger(MediaService.class);
+
     private static final int DEFAULT_PAGE_SIZE = 30;
     private static final int MAX_PAGE_SIZE = 100;
 
@@ -52,6 +60,8 @@ public class MediaService {
     private final AppProperties props;
     private final Set<String> allowedContentTypes;
     private final MeterRegistry meterRegistry;
+    private final UserRepository users;
+    private final PlanLimitService planLimits;
 
     public MediaService(MediaRepository media,
                         EventRepository events,
@@ -60,7 +70,11 @@ public class MediaService {
                         AuditService audit,
                         RateLimiter rateLimiter,
                         AppProperties props,
-                        MeterRegistry meterRegistry) {
+                        MeterRegistry meterRegistry,
+                        UserRepository users,
+                        PlanLimitService planLimits) {
+        this.users = users;
+        this.planLimits = planLimits;
         this.media = media;
         this.events = events;
         this.memberships = memberships;
@@ -78,6 +92,17 @@ public class MediaService {
     /**
      * Validates the request and reserves a media row in PENDING state, returning a
      * short-lived presigned PUT URL the client uses to upload directly to R2.
+     *
+     * <p>Hardening (docs/changes/2026-10-05-security-and-correctness-hardening.md):
+     * <ul>
+     *   <li>C3: the event host's user row is locked FOR UPDATE before the plan-limit
+     *       check, and the check runs in this transaction, so parallel requests cannot
+     *       all pass the same "count &lt; limit" test. PENDING rows count toward the
+     *       quota, so a reservation holds its slot until it is completed or rejected.</li>
+     *   <li>C4: a supplied membershipId must be an ACTIVE membership of this event, and
+     *       the stored uploader name comes from that membership, not the request.</li>
+     *   <li>C1: the presigned PUT signs the declared size.</li>
+     * </ul>
      */
     @Transactional
     public UploadUrlResponse requestUploadUrl(UploadUrlRequest request, String clientIp) {
@@ -99,6 +124,23 @@ public class MediaService {
             throw new BadRequestException("File exceeds the maximum allowed size of " + maxBytes + " bytes");
         }
 
+        String uploaderName = trimToNull(request.uploaderDisplayName());
+        if (request.membershipId() != null) {
+            EventMembership membership = memberships
+                    .findByIdAndEventIdAndStatus(request.membershipId(), event.getId(), MembershipStatus.ACTIVE)
+                    .orElseThrow(() -> new ForbiddenException(
+                            "Your guest session for this event is no longer valid. Please rejoin the event."));
+            if (trimToNull(membership.getGuestDisplayName()) != null) {
+                uploaderName = membership.getGuestDisplayName().trim();
+            }
+        }
+
+        MediaType mediaType = MediaType.fromContentType(contentType);
+        if (event.getHostId() != null) {
+            users.findByIdForUpdate(event.getHostId());
+        }
+        planLimits.checkCanUpload(event, mediaType, request.sizeBytes());
+
         UUID mediaId = UUID.randomUUID();
         String objectKey = ObjectKeys.original(event.getId(), mediaId, request.filename());
 
@@ -106,17 +148,17 @@ public class MediaService {
         entity.setId(mediaId);
         entity.setEventId(event.getId());
         entity.setUploaderMembershipId(request.membershipId());
-        entity.setUploaderDisplayName(trimToNull(request.uploaderDisplayName()));
+        entity.setUploaderDisplayName(uploaderName);
         entity.setOriginalFilename(request.filename());
         entity.setContentType(contentType);
-        entity.setMediaType(MediaType.fromContentType(contentType));
+        entity.setMediaType(mediaType);
         entity.setSizeBytes(request.sizeBytes());
         entity.setObjectKey(objectKey);
         entity.setStatus(MediaStatus.PENDING);
         entity.setModerationState(event.isAutoApprove() ? ModerationState.VISIBLE : ModerationState.HIDDEN);
         media.save(entity);
 
-        String uploadUrl = storage.presignUpload(objectKey, contentType);
+        String uploadUrl = storage.presignUpload(objectKey, contentType, request.sizeBytes());
         return new UploadUrlResponse(mediaId, objectKey, uploadUrl, "PUT",
                 contentType, storage.uploadTtlSeconds());
     }
@@ -126,8 +168,13 @@ public class MediaService {
      * runs exact duplicate detection. Leaving the row in UPLOADED enqueues it for the
      * in-process media processor (thumbnail/poster generation), which polls by status.
      * Idempotent: re-calling after completion returns the current state.
+     *
+     * <p>C1 defence in depth: if the stored object is larger than the size declared when
+     * the URL was issued, the object is deleted, the row is marked FAILED/DELETED (so it
+     * stops counting toward quota) and {@link UploadRejectedException} is thrown. The
+     * transaction does not roll back on that exception so the rejection is durable.
      */
-    @Transactional
+    @Transactional(noRollbackFor = UploadRejectedException.class)
     public MediaResponse completeUpload(UUID mediaId, CompleteUploadRequest request, String clientIp) {
         Media entity = media.findById(mediaId)
                 .orElseThrow(() -> new NotFoundException("Media not found"));
@@ -139,8 +186,13 @@ public class MediaService {
         var head = storage.headObject(entity.getObjectKey())
                 .orElseThrow(() -> new BadRequestException(
                         "Upload was not found in storage. Re-upload and try again."));
-        if (head.contentLength() != null) {
-            entity.setSizeBytes(head.contentLength());
+        Long declaredSize = entity.getSizeBytes();
+        Long actualSize = head.contentLength();
+        if (declaredSize != null && actualSize != null && actualSize > declaredSize) {
+            rejectOversizeUpload(entity, declaredSize, actualSize, clientIp);
+        }
+        if (actualSize != null) {
+            entity.setSizeBytes(actualSize);
         }
 
         String sha256 = request.sha256().toLowerCase();
@@ -175,8 +227,20 @@ public class MediaService {
         return toResponse(saved);
     }
 
+    /** Backwards-compatible overload: gallery without a requesting guest identity. */
     @Transactional(readOnly = true)
     public GalleryPageResponse gallery(String inviteCode, String cursor, Integer requestedLimit) {
+        return gallery(inviteCode, cursor, requestedLimit, null);
+    }
+
+    /**
+     * Shared gallery page. When {@code requesterMembershipId} is supplied (guest UI sends
+     * it as the X-Membership-Id header) each item carries {@code ownedByRequester}, which
+     * drives the Delete button. The membership id itself is never returned (C2).
+     */
+    @Transactional(readOnly = true)
+    public GalleryPageResponse gallery(String inviteCode, String cursor, Integer requestedLimit,
+                                       UUID requesterMembershipId) {
         int limit = clampLimit(requestedLimit);
         Event event = loadActiveEvent(inviteCode);
         PageRequest page = PageRequest.of(0, limit + 1);
@@ -197,7 +261,9 @@ public class MediaService {
                 || !event.isShowUploaderNames();
         List<MediaResponse> items = new ArrayList<>(pageRows.size());
         for (Media m : pageRows) {
-            MediaResponse response = toResponse(m);
+            boolean owned = requesterMembershipId != null
+                    && requesterMembershipId.equals(m.getUploaderMembershipId());
+            MediaResponse response = toResponse(m).withOwnedByRequester(owned);
             items.add(hideUploader ? response.withoutUploader() : response);
         }
 
@@ -209,42 +275,64 @@ public class MediaService {
         return new GalleryPageResponse(items, nextCursor, hasMore);
     }
 
-        @Transactional
-        public void deleteOwnMedia(String inviteCode, UUID mediaId, DeleteOwnMediaRequest request, String clientIp) {
+    /**
+     * Lets a guest soft-delete media they uploaded.
+     *
+     * <p>C2: authorisation is the uploader's membership id only. The old fallback that
+     * accepted a matching display name was removed: names are public in the gallery, so
+     * any guest could delete anyone's photos by typing the uploader's name. Media
+     * uploaded without a membership can only be removed by the host via moderation.
+     */
+    @Transactional
+    public void deleteOwnMedia(String inviteCode, UUID mediaId, DeleteOwnMediaRequest request, String clientIp) {
         Event event = events.findByInviteCodeAndDeletedAtIsNull(inviteCode)
-            .orElseThrow(() -> new NotFoundException("Event not found"));
+                .orElseThrow(() -> new NotFoundException("Event not found"));
 
         Media entity = media.findByIdAndEventId(mediaId, event.getId())
-            .orElseThrow(() -> new NotFoundException("Media not found"));
+                .orElseThrow(() -> new NotFoundException("Media not found"));
 
-        boolean allowed = false;
-        String actorLabel = trimToNull(request.displayName());
-
-        if (request.membershipId() != null && entity.getUploaderMembershipId() != null
-            && request.membershipId().equals(entity.getUploaderMembershipId())) {
-            memberships.findByIdAndEventIdAndStatus(request.membershipId(), event.getId(), MembershipStatus.ACTIVE)
-                .orElseThrow(() -> new ForbiddenException("Uploader membership is no longer active"));
-            allowed = true;
-        }
-
-        if (!allowed && actorLabel != null && entity.getUploaderDisplayName() != null
-            && entity.getUploaderDisplayName().equalsIgnoreCase(actorLabel)) {
-            allowed = true;
-        }
-
-        if (!allowed) {
+        if (entity.getUploaderMembershipId() == null
+                || !entity.getUploaderMembershipId().equals(request.membershipId())) {
             throw new ForbiddenException("Only the uploader can delete this media");
         }
+        EventMembership membership = memberships
+                .findByIdAndEventIdAndStatus(request.membershipId(), event.getId(), MembershipStatus.ACTIVE)
+                .orElseThrow(() -> new ForbiddenException("Uploader membership is no longer active"));
 
         entity.setModerationState(ModerationState.DELETED);
         media.save(entity);
 
+        String actorLabel = trimToNull(membership.getGuestDisplayName());
         audit.record(entity.getEventId(), null, actorLabel,
-            "MEDIA_SELF_DELETED", "MEDIA", entity.getId(),
-            Map.of("mediaType", entity.getMediaType().name(),
-                "sizeBytes", entity.getSizeBytes() == null ? 0 : entity.getSizeBytes()),
-            clientIp);
+                "MEDIA_SELF_DELETED", "MEDIA", entity.getId(),
+                Map.of("mediaType", entity.getMediaType().name(),
+                        "sizeBytes", entity.getSizeBytes() == null ? 0 : entity.getSizeBytes()),
+                clientIp);
+    }
+
+    private void rejectOversizeUpload(Media entity, long declaredSize, long actualSize, String clientIp) {
+        try {
+            storage.deleteObject(entity.getObjectKey());
+        } catch (RuntimeException e) {
+            // Row is still marked DELETED below; an orphaned object can be swept later.
+            log.warn("Could not delete oversize object {}: {}", entity.getObjectKey(), e.getMessage());
         }
+        entity.setSizeBytes(actualSize);
+        entity.setStatus(MediaStatus.FAILED);
+        entity.setModerationState(ModerationState.DELETED);
+        media.save(entity);
+
+        audit.record(entity.getEventId(), entity.getUploaderUserId(), entity.getUploaderDisplayName(),
+                "MEDIA_UPLOAD_REJECTED", "MEDIA", entity.getId(),
+                Map.of("reason", "SIZE_MISMATCH",
+                        "declaredBytes", declaredSize,
+                        "actualBytes", actualSize),
+                clientIp);
+        meterRegistry.counter("eventshare.media.upload.rejected", "reason", "size_mismatch").increment();
+
+        throw new UploadRejectedException(
+                "Uploaded file is larger than the size declared when the upload started.");
+    }
 
     // ---- helpers ----
 
