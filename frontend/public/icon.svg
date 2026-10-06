@@ -1,6 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EventShare">
-  <rect width="512" height="512" rx="96" fill="#4f46e5"/>
-  <circle cx="256" cy="200" r="64" fill="none" stroke="#ffffff" stroke-width="28"/>
-  <rect x="120" y="150" width="272" height="220" rx="28" fill="none" stroke="#ffffff" stroke-width="28"/>
-  <circle cx="360" cy="150" r="16" fill="#ffffff"/>
+  <rect width="512" height="512" rx="112" fill="#fff7fb"/>
+  <ellipse cx="256" cy="420" rx="155" ry="25" fill="#f8ddea"/>
+
+  <!-- A simplified shared photo board, tilted like the EventShare illustration. -->
+  <g transform="rotate(-5 256 252)">
+    <rect x="86" y="92" width="340" height="286" rx="36" fill="#ffffff" stroke="#f7b9d7" stroke-width="10"/>
+
+    <rect x="116" y="126" width="112" height="102" rx="18" fill="#f9ddec"/>
+    <circle cx="148" cy="157" r="13" fill="#c99b3c"/>
+    <path d="m122 211 31-34 23 22 20-17 30 30v16h-104z" fill="#e85a9f"/>
+
+    <rect x="246" y="126" width="112" height="102" rx="18" fill="#faeee3"/>
+    <circle cx="302" cy="173" r="28" fill="#d9367a"/>
+
+    <rect x="116" y="248" width="112" height="102" rx="18" fill="#f8eddf"/>
+    <path d="m137 324 28-43 16 25 16-13 25 31z" fill="#c99b3c"/>
+
+    <rect x="246" y="248" width="112" height="102" rx="18" fill="#f3e6f4"/>
+    <circle cx="302" cy="299" r="25" fill="#ed6aae"/>
+
+    <path d="M386 132c0-17 23-23 31-7 8-16 31-10 31 7 0 19-31 38-31 38s-31-19-31-38z" fill="#d72d73"/>
+    <path d="M347 270c0-14 18-19 25-6 7-13 25-8 25 6 0 15-25 30-25 30s-25-15-25-30z" fill="#d72d73"/>
+
+    <rect x="198" y="359" width="116" height="24" rx="12" fill="#fde8f2"/>
+    <rect x="218" y="367" width="52" height="8" rx="4" fill="#e276ad"/>
+    <circle cx="292" cy="371" r="8" fill="#d72d73"/>
+    <path d="M288 371h8M292 367v8" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Small floating accents keep the mark recognizable at favicon size. -->
+  <circle cx="98" cy="348" r="13" fill="#c99b3c"/>
+  <circle cx="118" cy="318" r="12" fill="#d72d73"/>
+  <path d="M98 361c8 30 27 41 43 45M118 330c-4 28-14 43-31 56" fill="none" stroke="#c99b3c" stroke-width="5" stroke-linecap="round"/>
 </svg>

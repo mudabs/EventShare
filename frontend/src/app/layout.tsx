@@ -30,7 +30,11 @@ export const metadata: Metadata = {
   title: 'EventShare',
   description: 'Collect every photo and video from your event in one shared gallery.',
   manifest: '/manifest.webmanifest',
-  applicationName: 'EventShare'
+  applicationName: 'EventShare',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg'
+  }
 };
 
 export const viewport: Viewport = {
