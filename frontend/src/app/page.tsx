@@ -87,10 +87,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        <footer className="border-t border-brand/10 py-10 text-center text-sm text-ink/50">
-          <span className="script text-xl">EventShare</span>
-          <p className="mt-1">Made for the moments worth keeping.</p>
-        </footer>
       </main>
     </div>
   );

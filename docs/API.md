@@ -154,12 +154,28 @@ media is soft-deleted (moderation state DELETED). Returns 204 No Content.
 ### Demo mode
 
 `GET /api/demo/info`  Public. `{ "enabled": false }` unless demo mode is on; otherwise also
-`inviteCode`, `secondaryInviteCode`, `promoCode`, `guestUrl`, `resetCron`, `resetZone`, and,
+`inviteCode`, `secondaryInviteCode`, `guestUrl`, `resetCron`, `resetZone`, and,
 only when `DEMO_SHOW_CREDENTIALS=true`, `logins: [{ role, email, password }]`.
+
+`GET /api/admin/demo/info`  Admin. Same as the public endpoint plus `promoCode` (the public
+endpoint no longer includes it).
 
 `POST /api/admin/demo/reset`  Admin. Deletes all demo-owned data and seeds it again.
 Returns `{ trigger, finishedAt, photosSeeded, oldObjectsRemoved, durationMs }`. 404 when
 demo mode is off. See `docs/DEMO.md`.
+
+### Report a photo (guest)
+
+`POST /api/events/code/{code}/media/{mediaId}/report`  Public. 204.
+
+```json
+{ "reason": "ME_REMOVE", "details": "optional note, max 500 chars" }
+```
+
+Reasons: `ME_REMOVE`, `INAPPROPRIATE`, `COPYRIGHT`, `CHILD_SAFETY`, `OTHER`. One report per
+visitor per item (repeats are accepted and ignored), 10 per minute per IP, item must be
+visible. Three open reports or one `CHILD_SAFETY` report hide the item until the host
+reviews it. Owner gallery items include `reportCount`.
 
 ### System
 

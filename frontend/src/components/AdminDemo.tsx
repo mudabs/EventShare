@@ -2,7 +2,7 @@
 
 import { useAuth } from '@clerk/nextjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchDemoInfo, resetDemo } from '@/lib/api';
+import { fetchAdminDemoInfo, resetDemo } from '@/lib/api';
 import { useFeedback } from './feedback/AppFeedback';
 
 /** Admin tab for demo mode: shows the demo setup and resets it on demand. */
@@ -10,7 +10,10 @@ export function AdminDemo() {
   const { getToken } = useAuth();
   const { confirm, toast } = useFeedback();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ['demoInfo'], queryFn: fetchDemoInfo });
+  const { data, isLoading } = useQuery({
+    queryKey: ['adminDemoInfo'],
+    queryFn: async () => fetchAdminDemoInfo((await getToken()) ?? '')
+  });
 
   const reset = useMutation({
     mutationFn: async () => resetDemo((await getToken()) ?? ''),

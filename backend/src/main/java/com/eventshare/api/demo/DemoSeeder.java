@@ -268,7 +268,17 @@ public class DemoSeeder {
                  WHERE event_id IN (SELECT id FROM events WHERE host_id IN (:hostIds))
                 """, params);
         int deletedEvents = jdbc.update("DELETE FROM events WHERE host_id IN (:hostIds)", params);
-        // Promo redemptions made with the demo accounts during an interview.
+        // Promo redemptions made with the demo accounts during an interview, for ANY promo
+        // code (not only the demo one): give the redemption back to the code's counter, drop
+        // the usage rows so the code can be redeemed again, then drop the resulting plans.
+        jdbc.update("""
+                UPDATE promo_codes p
+                   SET redemptions_used = GREATEST(0, p.redemptions_used - u.n)
+                  FROM (SELECT promo_code_id, count(*) AS n FROM promo_code_usage
+                         WHERE user_id IN (:hostIds) GROUP BY promo_code_id) u
+                 WHERE p.id = u.promo_code_id
+                """, params);
+        jdbc.update("DELETE FROM promo_code_usage WHERE user_id IN (:hostIds)", params);
         jdbc.update("DELETE FROM subscriptions WHERE user_id IN (:hostIds)", params);
         jdbc.update("DELETE FROM promo_codes WHERE upper(code) = :code",
                 new MapSqlParameterSource("code", props.promoCode()));
@@ -524,11 +534,11 @@ public class DemoSeeder {
     }
 
     /** Used by DemoController; kept here so the logic and the public view stay together. */
+    /** Public demo facts. The promo code is deliberately not included (admin endpoint only). */
     Map<String, Object> publicInfo() {
         return Map.of(
                 "inviteCode", props.inviteCode(),
                 "secondaryInviteCode", props.secondaryInviteCode(),
-                "promoCode", props.promoCode(),
                 "resetCron", props.resetCron(),
                 "resetZone", props.resetZone(),
                 "guestUploadsEnabled", props.guestUploadsEnabled(),

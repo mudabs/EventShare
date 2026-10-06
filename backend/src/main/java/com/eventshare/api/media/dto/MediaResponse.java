@@ -34,7 +34,9 @@ public record MediaResponse(
          * uploaded this item. The guest UI uses it to decide whether to show "Delete".
          * Replaces the old client-side display-name comparison (change C2).
          */
-        boolean ownedByRequester
+        boolean ownedByRequester,
+        /* Owner views only (null in public galleries): open visitor reports for this item. */
+        Integer reportCount
 ) {
     public static MediaResponse from(Media media, String originalUrl, String thumbnailUrl) {
         return from(media, originalUrl, thumbnailUrl, null);
@@ -59,20 +61,28 @@ public record MediaResponse(
                 originalUrl,
                 thumbnailUrl,
                 downloadUrl,
-                false);
+                false,
+                null);
     }
 
     /** A copy with uploader identity removed (for anonymous-mode galleries). */
     public MediaResponse withoutUploader() {
         return new MediaResponse(id, eventId, mediaType, contentType, originalFilename, status,
                 moderationState, null, sizeBytes, width, height, durationSeconds, duplicate, createdAt,
-                originalUrl, thumbnailUrl, downloadUrl, ownedByRequester);
+                originalUrl, thumbnailUrl, downloadUrl, ownedByRequester, reportCount);
     }
 
     /** A copy with the ownership flag set for the requesting guest. */
     public MediaResponse withOwnedByRequester(boolean owned) {
         return new MediaResponse(id, eventId, mediaType, contentType, originalFilename, status,
                 moderationState, uploaderDisplayName, sizeBytes, width, height, durationSeconds,
-                duplicate, createdAt, originalUrl, thumbnailUrl, downloadUrl, owned);
+                duplicate, createdAt, originalUrl, thumbnailUrl, downloadUrl, owned, reportCount);
+    }
+
+    /** A copy carrying the open report count (owner gallery). */
+    public MediaResponse withReportCount(int count) {
+        return new MediaResponse(id, eventId, mediaType, contentType, originalFilename, status,
+                moderationState, uploaderDisplayName, sizeBytes, width, height, durationSeconds,
+                duplicate, createdAt, originalUrl, thumbnailUrl, downloadUrl, ownedByRequester, count);
     }
 }

@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { joinEventAuthenticated } from '@/lib/api';
 import { useGuestStore } from '@/store/guestStore';
+import { ConsentNote } from './SiteFooter';
 
 export function AuthedEventJoin({ code, onJoined }: { code: string; onJoined: () => void }) {
   const { getToken } = useAuth();
@@ -49,6 +50,7 @@ export function AuthedEventJoin({ code, onJoined }: { code: string; onJoined: ()
         {busy ? 'Joining...' : 'Join and save to My Events'}
       </button>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <ConsentNote action="joining" />
     </div>
   );
 }

@@ -12,7 +12,7 @@ app in an interview and show every feature in a few minutes. It can run on your 
 | Demo admin account | Optional (`DEMO_ADMIN_ENABLED`), username `demo-admin`. Platform admin, so you can show the admin panel |
 | "Amara & Kofi's Wedding" | Active wedding, invite code `EVENTSHARE`. 8 guests, 18 generated photos spread over the last two days, 1 exact duplicate (flagged), 2 hidden photos in the moderation view, 46 visitors over two weeks for the analytics charts |
 | "Product Team Offsite" | Archived conference event (code `TEAMDAY26X`) so the dashboard lists more than one event |
-| Promo code `INTERVIEW30` | Grants Wedding Pro for 30 days; shows the promo redemption flow |
+| Promo code `INTERVIEW30` | Grants Wedding Pro for 30 days; shows the promo redemption flow. Not shown on the public landing page; visible to admins in the Demo tab. Every reset removes any promo redemptions made with the demo accounts (any code), gives those redemptions back to the code, and removes the resulting plans |
 
 The photos are drawn by the server (gradient landscapes, no third-party images, nothing to
 license). They are uploaded to R2 and marked UPLOADED, so the normal processing pipeline

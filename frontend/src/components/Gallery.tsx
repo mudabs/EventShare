@@ -9,6 +9,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { useGuestStore } from '@/store/guestStore';
 import { useFeedback } from './feedback/AppFeedback';
 import { MediaTile } from './MediaTile';
+import { ReportDialog } from './ReportDialog';
 import { EmptyGallery } from './illustrations';
 
 function formatBytes(bytes: number | null) {
@@ -38,6 +39,7 @@ export function Gallery({ code, eventName, allowDownloads = true, zipDownloads =
   const [selected, setSelected] = useState<MediaItem | null>(null);
   const [showMeta, setShowMeta] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // Progress label while a download job runs, e.g. "Zipping 3 of 17". Null when idle.
@@ -369,6 +371,16 @@ export function Gallery({ code, eventName, allowDownloads = true, zipDownloads =
                 </button>
               )}
 
+              {!selected.ownedByRequester && (
+                <button
+                  type="button"
+                  onClick={() => setReporting(true)}
+                  className="rounded-full bg-white/15 px-4 py-2 font-medium text-white hover:bg-white/25"
+                >
+                  Report
+                </button>
+              )}
+
               {canDeleteSelected && (
                 <button
                   type="button"
@@ -396,6 +408,20 @@ export function Gallery({ code, eventName, allowDownloads = true, zipDownloads =
             <p className="mt-2 text-center text-xs text-white/80">
               {position !== null ? `${position} of ${items.length}` : null}
             </p>
+
+            {reporting && (
+              <ReportDialog
+                code={code}
+                mediaId={selected.id}
+                onClose={() => setReporting(false)}
+                onReported={async () => {
+                  setReporting(false);
+                  toast({ title: 'Report sent', message: 'Thank you. The host has been notified.', tone: 'success' });
+                  // A report can hide the photo (child safety, or several reports); refresh the gallery.
+                  await refetch();
+                }}
+              />
+            )}
 
             {showMeta && (
               <div className="absolute bottom-16 right-3 z-20 w-72 rounded-xl bg-white p-3 text-sm shadow-xl">

@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/nextjs';
 import { useState } from 'react';
 import { useFeedback } from '@/components/feedback/AppFeedback';
 import { createEvent } from '@/lib/api';
+import { ConsentNote } from './SiteFooter';
 import type { EventResponse, EventType } from '@/lib/types';
 
 const EVENT_TYPES: EventType[] = [
@@ -102,6 +103,7 @@ export function CreateEventForm({ onCreated }: { onCreated: (event: EventRespons
       <button type="submit" disabled={submitting} className="btn-primary w-full">
         {submitting ? 'Creating…' : 'Create event'}
       </button>
+      <ConsentNote action="creating an event" host />
     </form>
   );
 }

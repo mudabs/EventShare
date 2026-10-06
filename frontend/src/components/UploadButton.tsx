@@ -6,6 +6,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { uploadCapturedFile } from '@/lib/upload';
 import { useGuestStore } from '@/store/guestStore';
 import { CameraCapture } from './CameraCapture';
+import { ConsentNote } from './SiteFooter';
 
 interface UploadButtonProps {
   code: string;
@@ -125,6 +126,7 @@ export function UploadButton({ code, remaining = null, maxBytes = null }: Upload
         <p className="text-sm text-ink/60">Uploading {progress.done} of {progress.total}...</p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <ConsentNote action="uploading" />
 
       {cameraOpen && <CameraCapture onCapture={handleCaptured} onClose={() => setCameraOpen(false)} />}
     </div>

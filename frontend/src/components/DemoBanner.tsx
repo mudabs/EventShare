@@ -40,11 +40,6 @@ export function DemoBanner() {
       </div>
       <p className="mt-3 text-xs text-ink/50">
         Guest code <span className="font-mono">{data.inviteCode}</span>
-        {data.promoCode && (
-          <>
-            {' '}· promo code <span className="font-mono">{data.promoCode}</span>
-          </>
-        )}
       </p>
       {data.logins && data.logins.length > 0 && (
         <dl className="mt-3 space-y-1 rounded-lg bg-blush/60 p-3 text-xs">

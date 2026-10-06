@@ -4,6 +4,7 @@ import { Cormorant_Garamond, Inter, Great_Vibes } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import { BottomNav } from '@/components/BottomNav';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
+import { SiteFooter } from '@/components/SiteFooter';
 import { Providers } from './providers';
 
 const sans = Inter({
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <body>
           <Providers>
             {children}
+            <SiteFooter />
             <BottomNav />
           </Providers>
           <ServiceWorkerRegister />

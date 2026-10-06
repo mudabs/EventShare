@@ -81,6 +81,13 @@ eventshare:
   admin-emails: ${ADMIN_EMAILS:}
   admin-clerk-user-ids: ${ADMIN_CLERK_USER_IDS:}
   demo-emails: ${DEMO_EMAILS:}
+  # Privacy Policy commitments (frontend/src/app/privacy/page.tsx).
+  privacy:
+    audit-ip-retention-days: ${AUDIT_IP_RETENTION_DAYS:90}
+    audit-ip-cron: ${AUDIT_IP_CRON:0 30 3 * * *}
+    # Deleted photos/videos (and deleted events) are erased permanently after this many days.
+    media-purge-days: ${MEDIA_PURGE_DAYS:30}
+    media-purge-cron: ${MEDIA_PURGE_CRON:0 45 3 * * *}
   # Interview/demo mode: seeded accounts, showcase events, nightly reset. See docs/DEMO.md.
   demo:
     enabled: ${DEMO_ENABLED:false}

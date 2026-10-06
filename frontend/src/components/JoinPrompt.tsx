@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { joinEvent, ApiError } from '@/lib/api';
 import { useGuestStore } from '@/store/guestStore';
+import { ConsentNote } from './SiteFooter';
 
 export function JoinPrompt({ code, onJoined }: { code: string; onJoined: () => void }) {
   const setIdentity = useGuestStore((s) => s.setIdentity);
@@ -44,6 +45,7 @@ export function JoinPrompt({ code, onJoined }: { code: string; onJoined: () => v
         </button>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <ConsentNote action="joining" />
     </form>
   );
 }

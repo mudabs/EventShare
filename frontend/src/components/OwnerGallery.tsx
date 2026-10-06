@@ -32,9 +32,19 @@ function Tile({
 }) {
   return (
     <div className="card overflow-hidden">
-      <div className="aspect-square bg-blush">
+      <div className="relative aspect-square bg-blush">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={item.thumbnailUrl ?? item.originalUrl} alt={item.originalFilename ?? 'media'} loading="lazy" className="h-full w-full object-cover" />
+        {/* Open visitor reports. Several reports (or a child-safety report) hide the photo
+            automatically; restoring it marks the reports as reviewed. */}
+        {item.reportCount ? (
+          <span
+            className="absolute left-2 top-2 rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-medium text-white shadow"
+            title="Guests reported this photo. Review it, then hide or restore."
+          >
+            Reported{item.reportCount > 1 ? ` ×${item.reportCount}` : ''}
+          </span>
+        ) : null}
       </div>
       <div className="flex flex-wrap gap-1 p-2">
         {actionsFor(state).map((a) => (

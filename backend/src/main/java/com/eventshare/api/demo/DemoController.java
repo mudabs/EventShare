@@ -65,6 +65,18 @@ public class DemoController {
         return body;
     }
 
+    @Operation(summary = "Demo settings including the promo code (admin)")
+    @GetMapping("/api/admin/demo/info")
+    public Map<String, Object> adminInfo(@CurrentUser User admin) {
+        adminGuard.requireAdmin(admin);
+        Map<String, Object> body = info();
+        if (props.enabled()) {
+            // Kept off the public endpoint so it is not advertised on the landing page.
+            body.put("promoCode", props.promoCode());
+        }
+        return body;
+    }
+
     @Operation(summary = "Reset the demo data now (admin)")
     @PostMapping("/api/admin/demo/reset")
     public DemoSeeder.DemoResetResult reset(@CurrentUser User admin) {

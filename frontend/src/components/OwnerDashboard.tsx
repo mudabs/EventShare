@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/nextjs';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOwnerDashboard } from '@/lib/api';
 import type { DayCount } from '@/lib/types';
+import { BarChart } from './BarChart';
 
 function formatBytes(bytes: number): string {
   if (bytes <= 0) return '0 B';
@@ -22,9 +23,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 }
 
 function ActivityChart({ data }: { data: DayCount[] }) {
-  const max = Math.max(1, ...data.map((d) => d.count));
   const total = data.reduce((sum, d) => sum + d.count, 0);
-
   return (
     <div className="card p-4">
       <div className="mb-3 flex items-baseline justify-between">
@@ -34,19 +33,16 @@ function ActivityChart({ data }: { data: DayCount[] }) {
       {total === 0 ? (
         <p className="py-8 text-center text-sm text-ink/50">No uploads in the last 14 days.</p>
       ) : (
-        <div className="flex h-40 items-stretch gap-1">
-          {data.map((d, i) => (
-            <div key={d.date} className="flex flex-1 flex-col items-center gap-1" title={`${d.date}: ${d.count}`}>
-              <div className="flex w-full flex-1 items-end">
-                <div
-                  className="w-full rounded-t bg-brand transition-all"
-                  style={{ height: `${(d.count / max) * 100}%`, minHeight: d.count > 0 ? '3px' : '0' }}
-                />
-              </div>
-              <span className="text-[9px] text-ink/40">{i % 2 === 0 ? d.date.slice(8) : ''}</span>
-            </div>
-          ))}
-        </div>
+        <BarChart
+          ariaLabel="Uploads per day"
+          hideOddLabelsOnPhones
+          data={data.map((d) => ({
+            key: d.date,
+            label: d.date.slice(8),
+            value: d.count,
+            title: `${d.date}: ${d.count} upload${d.count === 1 ? '' : 's'}`
+          }))}
+        />
       )}
     </div>
   );

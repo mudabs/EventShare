@@ -190,4 +190,29 @@ class DemoSeederIT {
         verify(storage, atLeast(PHOTOS)).deleteObject(anyString());
         assertThat(count("SELECT count(*) FROM promo_codes")).isZero();
     }
+
+    @Test
+    void resetGivesBackPromoRedemptionsMadeByDemoAccounts() {
+        seeder.reset("first");
+        UUID hostId = users.findByClerkUserId("user_demo_host").orElseThrow().getId();
+
+        // During an interview the demo host redeems a real (non-demo) promo code.
+        UUID realPromo = UUID.randomUUID();
+        jdbc.update("INSERT INTO promo_codes (id, code, type, grants_plan_code, duration_days, redemptions_used) "
+                + "VALUES (?, 'REAL10', 'TEMP_PREMIUM', 'BASIC', 10, 1)", realPromo);
+        UUID sub = UUID.randomUUID();
+        jdbc.update("INSERT INTO subscriptions (id, user_id, plan_code, status, source) "
+                + "VALUES (?, ?, 'BASIC', 'ACTIVE', 'PROMO')", sub, hostId);
+        jdbc.update("INSERT INTO promo_code_usage (promo_code_id, user_id, resulting_subscription_id) VALUES (?, ?, ?)",
+                realPromo, hostId, sub);
+
+        seeder.reset("second");
+
+        assertThat(count("SELECT count(*) FROM promo_code_usage WHERE user_id = ?", hostId)).isZero();
+        assertThat(count("SELECT count(*) FROM subscriptions WHERE user_id = ?", hostId)).isZero();
+        // The real code is kept and its redemption is given back.
+        assertThat(count("SELECT redemptions_used FROM promo_codes WHERE id = ?", realPromo)).isZero();
+        // The demo code is recreated fresh.
+        assertThat(count("SELECT redemptions_used FROM promo_codes WHERE code = 'INTERVIEW30'")).isZero();
+    }
 }

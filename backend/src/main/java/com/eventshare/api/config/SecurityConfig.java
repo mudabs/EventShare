@@ -83,6 +83,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/events/code/*/join").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/media/upload-url").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/media/*/complete").permitAll()
+                        // Any gallery viewer can report a photo (Terms of Use, "Reporting content").
+                        .requestMatchers(HttpMethod.POST, "/api/events/code/*/media/*/report").permitAll()
                         // Everything else requires a valid Clerk JWT:
                         .anyRequest().authenticated()
                 )

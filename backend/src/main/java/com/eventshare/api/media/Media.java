@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -90,4 +91,20 @@ public class Media extends BaseEntity {
      */
     @Column(name = "uploader_ip_hash", length = 64)
     private String uploaderIpHash;
+
+    /**
+     * Sets the moderation state and keeps {@code deletedAt} in step: it records when the
+     * item was deleted (kept if already set) and is cleared on restore. MediaPurgeJob erases
+     * items deleted more than 30 days ago. Declared explicitly so Lombok does not generate it.
+     */
+    public void setModerationState(ModerationState moderationState) {
+        this.moderationState = moderationState;
+        if (moderationState == ModerationState.DELETED) {
+            if (getDeletedAt() == null) {
+                setDeletedAt(Instant.now());
+            }
+        } else {
+            setDeletedAt(null);
+        }
+    }
 }

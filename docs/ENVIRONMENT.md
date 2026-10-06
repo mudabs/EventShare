@@ -94,6 +94,14 @@ DEMO_MAX_GUEST_UPLOAD_BYTES. Maximum size of one public-demo upload (default 262
 EVENTSHARE_HTTP_PORT. Host port for the app's nginx on 127.0.0.1 (default 8088; the local
 demo uses 8090). Used by: docker compose.
 
+## Privacy and legal pages
+
+NEXT_PUBLIC_CONTACT_EMAIL. Contact shown on `/privacy` and `/terms` (privacy, removal and
+copyright requests). Frontend build argument; rebuild the frontend after changing it.
+AUDIT_IP_RETENTION_DAYS. Days before raw IPs are cleared from `audit_logs` (default 90). Used by: api.
+MEDIA_PURGE_DAYS. Days after deletion before photos, videos and deleted events are erased from
+R2 and the database (default 30). Used by: api.
+
 ## CI/CD
 
 VPS_APP_DIR. Optional environment variable on the `vps01` self-hosted runner; defaults to

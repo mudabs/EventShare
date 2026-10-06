@@ -254,5 +254,19 @@ export const fetchEvent = (token: string, id: string) =>
 
 export const fetchDemoInfo = () => request<DemoInfo>(`/demo/info`);
 
+/** Admin view of the demo settings, including the promo code (not on the public endpoint). */
+export const fetchAdminDemoInfo = (token: string) => request<DemoInfo>(`/admin/demo/info`, { token });
+
 export const resetDemo = (token: string) =>
   request<DemoResetResult>(`/admin/demo/reset`, { method: 'POST', token });
+
+// ---- Photo reports (Terms of Use, "Reporting and removing content") ----
+
+export type ReportReason = 'ME_REMOVE' | 'INAPPROPRIATE' | 'COPYRIGHT' | 'CHILD_SAFETY' | 'OTHER';
+
+/** Public: any gallery viewer can report an item. Repeat reports from the same visitor are ignored. */
+export const reportMedia = (code: string, mediaId: string, payload: { reason: ReportReason; details?: string }) =>
+  request<void>(`/events/code/${encodeURIComponent(code)}/media/${encodeURIComponent(mediaId)}/report`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });

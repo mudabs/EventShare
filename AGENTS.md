@@ -21,5 +21,8 @@ Conventions:
   `docs/DECISIONS.md` if a design choice was made.
 - Never commit secrets. `.env`, `*.env`, `.env.demo`, `frontend/.env.local` and `private/`
   are ignored. Demo passwords are generated into `.env.demo`; never hardcode them.
+- `/privacy` describes exactly what the code collects. If you add data, a provider, cookies,
+  tracking or change retention, update `frontend/src/app/privacy/page.tsx` and the mapping
+  table in `docs/changes/2026-10-05-privacy-terms-and-reporting.md` in the same change.
 - Guest authorisation relies on the invite code (view and upload) and the guest's
   membership id (self-delete). Do not reintroduce display-name based checks.

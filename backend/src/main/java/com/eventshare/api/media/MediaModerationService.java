@@ -9,6 +9,7 @@ import com.eventshare.api.event.EventRepository;
 import com.eventshare.api.media.dto.GalleryPageResponse;
 import com.eventshare.api.media.dto.MediaResponse;
 import com.eventshare.api.media.r2.R2StorageService;
+import com.eventshare.api.report.MediaReportRepository;
 import com.eventshare.api.user.User;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -30,10 +31,12 @@ public class MediaModerationService {
     private final R2StorageService storage;
     private final AuditService audit;
     private final DemoGuard demoGuard;
+    private final MediaReportRepository reports;
 
     public MediaModerationService(MediaRepository media, EventRepository events,
                                   R2StorageService storage, AuditService audit,
-                                  DemoGuard demoGuard) {
+                                  DemoGuard demoGuard, MediaReportRepository reports) {
+        this.reports = reports;
         this.media = media;
         this.events = events;
         this.storage = storage;
@@ -55,6 +58,11 @@ public class MediaModerationService {
         };
         item.setModerationState(newState);
         Media saved = media.save(item);
+        if (newState == ModerationState.VISIBLE) {
+            // The host reviewed it and chose to keep it: close the open reports so the
+            // auto-hide threshold starts again from zero.
+            reports.resolveOpen(mediaId, java.time.Instant.now());
+        }
 
         audit.record(eventId, host.getId(), host.getDisplayName(), "MEDIA_" + action.name(),
                 "MEDIA", mediaId, Map.of("state", newState.name()), null);
@@ -119,7 +127,8 @@ public class MediaModerationService {
         String thumbnailUrl = m.getThumbnailKey() != null
                 ? storage.presignDownload(m.getThumbnailKey()) : null;
         String downloadUrl = storage.presignAttachment(m.getObjectKey(), m.getOriginalFilename());
-        return MediaResponse.from(m, originalUrl, thumbnailUrl, downloadUrl);
+        int openReports = (int) reports.countByMediaIdAndResolvedAtIsNull(m.getId());
+        return MediaResponse.from(m, originalUrl, thumbnailUrl, downloadUrl).withReportCount(openReports);
     }
 
     private int clampLimit(Integer requested) {

@@ -86,6 +86,8 @@ export interface MediaItem {
   thumbnailUrl: string | null;
   /** Presigned URL that saves the file (Content-Disposition: attachment) instead of opening it. */
   downloadUrl: string | null;
+  /** Owner gallery only: open visitor reports (null in public galleries). */
+  reportCount?: number | null;
   /** True when the X-Membership-Id sent with the gallery request uploaded this item. */
   ownedByRequester: boolean;
 }

@@ -68,6 +68,8 @@ services:
       ADMIN_CLERK_USER_IDS: ${ADMIN_CLERK_USER_IDS:-}
       DEMO_EMAILS: ${DEMO_EMAILS:-}
       # Interview/demo mode (docs/DEMO.md). Off unless DEMO_ENABLED=true.
+      AUDIT_IP_RETENTION_DAYS: ${AUDIT_IP_RETENTION_DAYS:-90}
+      MEDIA_PURGE_DAYS: ${MEDIA_PURGE_DAYS:-30}
       DEMO_ENABLED: ${DEMO_ENABLED:-false}
       DEMO_HOST_USERNAME: ${DEMO_HOST_USERNAME:-}
       DEMO_HOST_EMAIL: ${DEMO_HOST_EMAIL:-}
@@ -135,6 +137,8 @@ services:
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
         NEXT_PUBLIC_CLERK_SIGN_IN_URL: ${NEXT_PUBLIC_CLERK_SIGN_IN_URL}
         NEXT_PUBLIC_CLERK_SIGN_UP_URL: ${NEXT_PUBLIC_CLERK_SIGN_UP_URL}
+        # Shown on /privacy and /terms for privacy, removal and copyright requests.
+        NEXT_PUBLIC_CONTACT_EMAIL: ${NEXT_PUBLIC_CONTACT_EMAIL:-}
     restart: unless-stopped
     environment:
       NODE_ENV: production
