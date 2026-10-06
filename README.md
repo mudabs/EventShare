@@ -146,7 +146,7 @@ cd frontend && npm run typecheck
 
 - App: https://YOUR-DOMAIN
 - Guest gallery, no login: https://YOUR-DOMAIN/e/EVENTSHARE
-- Host login: username `demo-host`, password `YOUR-DEMO-PASSWORD`
+- Host login: **username:** `demo-host`, **password:** `YOUR-DEMO-PASSWORD`
 
 Demo data resets every night at 4 AM US Central, so feel free to upload, hide, or delete.
 
