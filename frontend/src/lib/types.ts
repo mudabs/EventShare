@@ -11,6 +11,8 @@ export interface PublicEvent {
   showUploadTimestamps: boolean;
   anonymous: boolean;
   coverImageUrl: string | null;
+  /** The host's plan includes ZIP downloads (Basic, Wedding Pro, Lifetime, or unlimited). */
+  zipDownloads: boolean;
 }
 
 export interface EventResponse {
@@ -76,6 +78,8 @@ export interface MediaItem {
   createdAt: string;
   originalUrl: string;
   thumbnailUrl: string | null;
+  /** Presigned URL that saves the file (Content-Disposition: attachment) instead of opening it. */
+  downloadUrl: string | null;
   /** True when the X-Membership-Id sent with the gallery request uploaded this item. */
   ownedByRequester: boolean;
 }

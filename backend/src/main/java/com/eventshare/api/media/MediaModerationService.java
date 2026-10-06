@@ -111,7 +111,8 @@ public class MediaModerationService {
         String originalUrl = storage.presignDownload(m.getObjectKey());
         String thumbnailUrl = m.getThumbnailKey() != null
                 ? storage.presignDownload(m.getThumbnailKey()) : null;
-        return MediaResponse.from(m, originalUrl, thumbnailUrl);
+        String downloadUrl = storage.presignAttachment(m.getObjectKey(), m.getOriginalFilename());
+        return MediaResponse.from(m, originalUrl, thumbnailUrl, downloadUrl);
     }
 
     private int clampLimit(Integer requested) {

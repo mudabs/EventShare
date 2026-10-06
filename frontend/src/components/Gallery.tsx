@@ -3,6 +3,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { deleteOwnMedia, fetchGallery } from '@/lib/api';
+import { downloadFile, downloadIndividually, downloadZip, zipFileName, ZipTooLargeError } from '@/lib/download';
 import type { MediaItem } from '@/lib/types';
 import { queryKeys } from '@/lib/queryKeys';
 import { useGuestStore } from '@/store/guestStore';
@@ -22,7 +23,16 @@ function formatBytes(bytes: number | null) {
   return `${value.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
 }
 
-export function Gallery({ code }: { code: string }) {
+interface GalleryProps {
+  code: string;
+  eventName?: string;
+  /** Host setting "Allow guest downloads". When false, no download controls are shown. */
+  allowDownloads?: boolean;
+  /** Host's plan includes ZIP downloads (paid plans). Free plan: no "Download all", no ZIP. */
+  zipDownloads?: boolean;
+}
+
+export function Gallery({ code, eventName, allowDownloads = true, zipDownloads = false }: GalleryProps) {
   const { confirm, toast } = useFeedback();
   const identity = useGuestStore((s) => s.identities[code]);
   const [selected, setSelected] = useState<MediaItem | null>(null);
@@ -30,7 +40,9 @@ export function Gallery({ code }: { code: string }) {
   const [deleting, setDeleting] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [batchDownloading, setBatchDownloading] = useState(false);
+  // Progress label while a download job runs, e.g. "Zipping 3 of 17". Null when idle.
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
+  const busy = downloadStatus !== null;
   const {
     data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch
   } = useInfiniteQuery({
@@ -71,6 +83,8 @@ export function Gallery({ code }: { code: string }) {
     () => (selected ? items.findIndex((item) => item.id === selected.id) : -1),
     [items, selected]
   );
+  // 1-based position shown in the viewer ("1 of 17"), never 0.
+  const position = selectedIndex >= 0 ? selectedIndex + 1 : null;
   const hasPrev = selectedIndex > 0;
   const hasNext = selectedIndex >= 0 && selectedIndex < items.length - 1;
 
@@ -80,6 +94,15 @@ export function Gallery({ code }: { code: string }) {
     () => Boolean(selected?.ownedByRequester && identity?.membershipId),
     [identity?.membershipId, selected]
   );
+
+  // If the open item leaves the gallery (deleted, hidden by the host), close the viewer
+  // instead of showing a stale photo with no valid position.
+  useEffect(() => {
+    if (selected && !isLoading && selectedIndex === -1) {
+      setSelected(null);
+      setShowMeta(false);
+    }
+  }, [selected, selectedIndex, isLoading]);
 
   function showPrevious() {
     if (!hasPrev) return;
@@ -93,83 +116,63 @@ export function Gallery({ code }: { code: string }) {
     setShowMeta(false);
   }
 
-  function triggerDownload(item: MediaItem) {
-    const link = document.createElement('a');
-    link.href = item.originalUrl;
-    if (item.originalFilename) {
-      link.download = item.originalFilename;
-    }
-    link.rel = 'noreferrer';
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  }
-
-  async function startDownloads(list: MediaItem[], label: string) {
-    if (!list.length) return;
-    setBatchDownloading(true);
-    try {
-      for (const item of list) {
-        triggerDownload(item);
-        await new Promise((resolve) => window.setTimeout(resolve, 120));
+  /** Fetches every gallery page so "Download all" covers items not scrolled into view yet. */
+  async function fetchAllItems(): Promise<MediaItem[]> {
+    const all: MediaItem[] = [];
+    const seen = new Set<string>();
+    let cursor: string | null = null;
+    for (let loops = 0; loops < 500; loops += 1) {
+      const page = await fetchGallery(code, cursor, 100, identity?.membershipId);
+      for (const item of page.items) {
+        if (!seen.has(item.id)) {
+          seen.add(item.id);
+          all.push(item);
+        }
       }
-      toast({ title: `Started ${list.length} downloads`, message: label, tone: 'success' });
+      if (!page.hasMore || !page.nextCursor) break;
+      cursor = page.nextCursor;
+    }
+    return all;
+  }
+
+  /** Paid plans: one ZIP. Free plan: the files one by one. */
+  async function runDownload(source: MediaItem[] | (() => Promise<MediaItem[]>), zipSuffix: string) {
+    try {
+      if (zipDownloads) {
+        setDownloadStatus('Preparing ZIP');
+        const saved = await downloadZip(source, zipFileName(eventName, zipSuffix), (done, total) =>
+          setDownloadStatus(`Zipping ${done} of ${total}`)
+        );
+        if (saved) toast({ title: 'ZIP saved', tone: 'success' });
+      } else {
+        const list = typeof source === 'function' ? await source() : source;
+        if (!list.length) return;
+        setDownloadStatus(`Downloading 0 of ${list.length}`);
+        await downloadIndividually(list, (done) => setDownloadStatus(`Downloading ${done} of ${list.length}`));
+        toast({ title: `Started ${list.length} download${list.length === 1 ? '' : 's'}`, tone: 'success' });
+      }
+    } catch (err) {
+      const message = err instanceof ZipTooLargeError || err instanceof Error ? err.message : 'Download failed';
+      toast({ title: 'Download failed', message, tone: 'error' });
     } finally {
-      setBatchDownloading(false);
+      setDownloadStatus(null);
     }
   }
 
-  async function batchDownloadVisible() {
-    await startDownloads(items, 'Visible gallery items');
-  }
-
-  async function batchDownloadSelected() {
-    await startDownloads(selectedItems, 'Selected gallery items');
+  async function downloadSelected() {
+    await runDownload(selectedItems, 'selected');
   }
 
   async function downloadAllInEvent() {
     const accepted = await confirm({
-      title: 'Download all media in this event?',
-      message: 'This will fetch all gallery pages and start downloads for every item.',
-      confirmText: 'Download all',
+      title: 'Download everything as a ZIP?',
+      message: 'All photos and videos in this event will be saved into one ZIP file.',
+      confirmText: 'Download ZIP',
       tone: 'default'
     });
     if (!accepted) return;
-
-    setBatchDownloading(true);
-    try {
-      const allItems: MediaItem[] = [];
-      const seen = new Set<string>();
-      let cursor: string | null = null;
-      let loops = 0;
-
-      do {
-        const page = await fetchGallery(code, cursor, 100, identity?.membershipId);
-        for (const item of page.items) {
-          if (!seen.has(item.id)) {
-            seen.add(item.id);
-            allItems.push(item);
-          }
-        }
-        cursor = page.nextCursor;
-        loops += 1;
-        if (loops > 500) break;
-        if (!page.hasMore) break;
-      } while (cursor);
-
-      for (const item of allItems) {
-        triggerDownload(item);
-        await new Promise((resolve) => window.setTimeout(resolve, 120));
-      }
-
-      toast({ title: `Started ${allItems.length} downloads`, message: 'All event media', tone: 'success' });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Could not start full download';
-      toast({ title: 'Download-all failed', message, tone: 'error' });
-    } finally {
-      setBatchDownloading(false);
-    }
+    // The loader runs after the save dialog opens (see downloadZip).
+    await runDownload(fetchAllItems, 'all');
   }
 
   function toggleSelection(item: MediaItem) {
@@ -234,63 +237,61 @@ export function Gallery({ code }: { code: string }) {
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            setSelectionMode((v) => !v);
-            if (selectionMode) clearSelection();
-          }}
-          className={`rounded-full px-4 py-2 text-sm font-medium ${selectionMode ? 'bg-brand text-white' : 'bg-blush text-wine hover:bg-brand/10'}`}
-        >
-          {selectionMode ? 'Done selecting' : 'Select images'}
-        </button>
+      {allowDownloads && (
+        <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectionMode((v) => !v);
+              if (selectionMode) clearSelection();
+            }}
+            className={`rounded-full px-4 py-2 text-sm font-medium ${selectionMode ? 'bg-brand text-white' : 'bg-blush text-wine hover:bg-brand/10'}`}
+          >
+            {selectionMode ? 'Done selecting' : 'Select'}
+          </button>
 
-        {selectionMode && (
-          <>
+          {/* Selection actions appear only once something is selected, to keep the bar uncluttered. */}
+          {selectionMode && selectedItems.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={clearSelection}
+                disabled={busy}
+                className="rounded-full bg-blush px-4 py-2 text-sm font-medium text-wine hover:bg-brand/10 disabled:opacity-60"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={downloadSelected}
+                disabled={busy}
+                className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90 disabled:opacity-60"
+              >
+                {busy ? downloadStatus : zipDownloads ? `Download ZIP (${selectedItems.length})` : `Download (${selectedItems.length})`}
+              </button>
+            </>
+          )}
+
+          {/* "Download all" is a paid-plan feature (Basic, Wedding Pro, Lifetime). */}
+          {zipDownloads && !selectionMode && (
             <button
               type="button"
-              onClick={clearSelection}
-              className="rounded-full bg-blush px-4 py-2 text-sm font-medium text-wine hover:bg-brand/10"
+              onClick={downloadAllInEvent}
+              disabled={busy}
+              className="rounded-full bg-wine px-4 py-2 text-sm font-medium text-white hover:bg-wine/90 disabled:opacity-60"
             >
-              Clear ({selectedItems.length})
+              {busy ? downloadStatus : 'Download all (ZIP)'}
             </button>
-            <button
-              type="button"
-              onClick={batchDownloadSelected}
-              disabled={batchDownloading || selectedItems.length === 0}
-              className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90 disabled:opacity-60"
-            >
-              {batchDownloading ? 'Preparing downloads…' : `Download selected (${selectedItems.length})`}
-            </button>
-          </>
-        )}
-
-        <button
-          type="button"
-          onClick={batchDownloadVisible}
-          disabled={batchDownloading}
-          className="rounded-full bg-wine px-4 py-2 text-sm font-medium text-white hover:bg-wine/90 disabled:opacity-60"
-        >
-          {batchDownloading ? 'Preparing downloads…' : `Batch download (${items.length})`}
-        </button>
-
-        <button
-          type="button"
-          onClick={downloadAllInEvent}
-          disabled={batchDownloading}
-          className="rounded-full bg-gold px-4 py-2 text-sm font-medium text-ink hover:bg-gold/90 disabled:opacity-60"
-        >
-          {batchDownloading ? 'Preparing downloads…' : 'Download all in event'}
-        </button>
-      </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
         {items.map((item) => (
           <MediaTile
             key={item.id}
             item={item}
-            selectionMode={selectionMode}
+            selectionMode={allowDownloads && selectionMode}
             selected={selectedIds.has(item.id)}
             onToggleSelect={toggleSelection}
             onOpen={(chosen) => { setSelected(chosen); setShowMeta(false); }}
@@ -358,13 +359,15 @@ export function Gallery({ code }: { code: string }) {
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-              <a
-                href={selected.originalUrl}
-                download={selected.originalFilename ?? undefined}
-                className="rounded-full bg-brand px-4 py-2 font-medium text-white hover:bg-brand/90"
-              >
-                Download
-              </a>
+              {allowDownloads && (
+                <button
+                  type="button"
+                  onClick={() => downloadFile(selected)}
+                  className="rounded-full bg-brand px-4 py-2 font-medium text-white hover:bg-brand/90"
+                >
+                  Download
+                </button>
+              )}
 
               {canDeleteSelected && (
                 <button
@@ -391,7 +394,7 @@ export function Gallery({ code }: { code: string }) {
             </div>
 
             <p className="mt-2 text-center text-xs text-white/80">
-              {selectedIndex + 1} of {items.length}
+              {position !== null ? `${position} of ${items.length}` : null}
             </p>
 
             {showMeta && (

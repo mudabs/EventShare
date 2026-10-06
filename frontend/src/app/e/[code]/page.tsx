@@ -85,7 +85,12 @@ export default function EventPage() {
               </p>
             )}
 
-            <Gallery code={code} />
+            <Gallery
+              code={code}
+              eventName={event.name}
+              allowDownloads={event.allowGuestDownloads}
+              zipDownloads={event.zipDownloads}
+            />
           </div>
         )}
       </main>

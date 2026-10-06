@@ -305,6 +305,23 @@ class MediaServiceTest {
         assertThat(page.items()).extracting(MediaResponse::ownedByRequester).containsExactly(true, false);
     }
 
+    @Test
+    void galleryItemsCarryAttachmentDownloadUrl() {
+        Event event = activeEvent(true);
+        Media item = pendingMedia(event.getId(), 1L);
+        item.setOriginalFilename("sunset.jpg");
+        item.setCreatedAt(Instant.now());
+        when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
+        when(media.findGalleryFirstPage(eq(event.getId()), eq(ModerationState.VISIBLE), any()))
+                .thenReturn(List.of(item));
+        when(storage.presignAttachment(item.getObjectKey(), "sunset.jpg")).thenReturn("https://r2.example/attach");
+
+        GalleryPageResponse page = service.gallery("CODE123456", null, 10, null);
+
+        // Used by the web "Download" button so the browser saves instead of opening the file.
+        assertThat(page.items().get(0).downloadUrl()).isEqualTo("https://r2.example/attach");
+    }
+
     private static Media pendingMedia(UUID eventId, long declaredBytes) {
         Media m = new Media();
         m.setId(UUID.randomUUID());

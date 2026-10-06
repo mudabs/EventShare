@@ -24,6 +24,12 @@ public record MediaResponse(
         String originalUrl,
         String thumbnailUrl,
         /*
+         * Presigned GET that makes the browser save the file instead of opening it
+         * (Content-Disposition: attachment). Cross-origin <a download> is ignored by
+         * browsers, which is why "Download" used to open the image in a new page.
+         */
+        String downloadUrl,
+        /*
          * True when the caller's X-Membership-Id header matches the membership that
          * uploaded this item. The guest UI uses it to decide whether to show "Delete".
          * Replaces the old client-side display-name comparison (change C2).
@@ -31,6 +37,10 @@ public record MediaResponse(
         boolean ownedByRequester
 ) {
     public static MediaResponse from(Media media, String originalUrl, String thumbnailUrl) {
+        return from(media, originalUrl, thumbnailUrl, null);
+    }
+
+    public static MediaResponse from(Media media, String originalUrl, String thumbnailUrl, String downloadUrl) {
         return new MediaResponse(
                 media.getId(),
                 media.getEventId(),
@@ -48,6 +58,7 @@ public record MediaResponse(
                 media.getCreatedAt(),
                 originalUrl,
                 thumbnailUrl,
+                downloadUrl,
                 false);
     }
 
@@ -55,13 +66,13 @@ public record MediaResponse(
     public MediaResponse withoutUploader() {
         return new MediaResponse(id, eventId, mediaType, contentType, originalFilename, status,
                 moderationState, null, sizeBytes, width, height, durationSeconds, duplicate, createdAt,
-                originalUrl, thumbnailUrl, ownedByRequester);
+                originalUrl, thumbnailUrl, downloadUrl, ownedByRequester);
     }
 
     /** A copy with the ownership flag set for the requesting guest. */
     public MediaResponse withOwnedByRequester(boolean owned) {
         return new MediaResponse(id, eventId, mediaType, contentType, originalFilename, status,
                 moderationState, uploaderDisplayName, sizeBytes, width, height, durationSeconds,
-                duplicate, createdAt, originalUrl, thumbnailUrl, owned);
+                duplicate, createdAt, originalUrl, thumbnailUrl, downloadUrl, owned);
     }
 }

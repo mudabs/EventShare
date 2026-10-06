@@ -75,6 +75,10 @@ OTHER.
   "eventName": "Sam & Tari's Wedding", "displayName": "Alice" }
 ```
 
+Note: `GET /api/events/code/{code}` (public event summary) includes `zipDownloads`: true
+when the host's plan offers ZIP downloads (paid plans and unlimited accounts). The guest
+gallery hides "Download all" and builds ZIPs only when it is true.
+
 ### Request upload URL (guest)
 
 `POST /api/media/upload-url`  Public.
@@ -124,6 +128,7 @@ for media uploaded by that membership.
     "moderationState": "VISIBLE", "uploaderDisplayName": "Alice",
     "width": 4032, "height": 3024, "duplicate": false, "createdAt": "...",
     "originalUrl": "https://...signed...", "thumbnailUrl": "https://...signed...",
+    "downloadUrl": "https://...signed, Content-Disposition: attachment...",
     "ownedByRequester": false } ],
   "nextCursor": "b64cursor", "hasMore": true }
 ```
@@ -138,7 +143,7 @@ for media uploaded by that membership.
 
 `membershipId` is required and must match the media's uploader membership and be ACTIVE;
 otherwise 403. `displayName` is ignored for authorisation (kept for older clients). The
-media is soft-deleted (moderation state DELETED).
+media is soft-deleted (moderation state DELETED). Returns 204 No Content.
 
 ### Demo mode
 

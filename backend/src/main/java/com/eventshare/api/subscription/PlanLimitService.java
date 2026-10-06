@@ -75,6 +75,22 @@ public class PlanLimitService {
         return plans.findById(code).orElseGet(this::unlimitedPlan);
     }
 
+    /**
+     * Whether guests of this event may download as a ZIP ("Download all", "Download
+     * selected as ZIP"). A plan feature of the event host: false on FREE, true on paid
+     * plans and for whitelisted/demo/admin accounts.
+     */
+    @Transactional(readOnly = true)
+    public boolean hostHasZipExport(Event event) {
+        if (event.getHostId() == null) {
+            return false;
+        }
+        return users.findById(event.getHostId())
+                .map(this::effectivePlan)
+                .map(Plan::isZipExport)
+                .orElse(false);
+    }
+
     @Transactional(readOnly = true)
     public void checkCanCreateEvent(User user) {
         Integer maxEvents = effectivePlan(user).getMaxEvents();

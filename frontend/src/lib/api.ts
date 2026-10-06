@@ -45,10 +45,13 @@ async function request<T>(path: string, init: RequestInitWithToken = {}): Promis
     throw new ApiError(detail, response.status, code);
   }
 
+  // 204, or a 2xx with an empty body (e.g. a void endpoint), has nothing to parse.
+  // Calling response.json() on it throws "Unexpected end of JSON input".
   if (response.status === 204) {
     return undefined as T;
   }
-  return (await response.json()) as T;
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export const getPublicEvent = (code: string) =>

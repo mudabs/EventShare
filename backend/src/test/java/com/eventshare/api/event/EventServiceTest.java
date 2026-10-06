@@ -12,6 +12,7 @@ import com.eventshare.api.event.dto.JoinEventRequest;
 import com.eventshare.api.event.dto.JoinEventResponse;
 import com.eventshare.api.media.MediaRepository;
 import com.eventshare.api.media.r2.R2StorageService;
+import com.eventshare.api.subscription.PlanLimitService;
 import com.eventshare.api.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ class EventServiceTest {
     @Mock InviteCodeGenerator inviteCodes;
     @Mock AuditService audit;
     @Mock RateLimiter rateLimiter;
+    @Mock PlanLimitService planLimits;
 
     EventService service;
     User host;
@@ -58,7 +60,7 @@ class EventServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EventService(events, memberships, media, inviteCodes, audit, rateLimiter, props(), storage);
+        service = new EventService(events, memberships, media, inviteCodes, audit, rateLimiter, props(), storage, planLimits);
         host = new User();
         host.setId(UUID.randomUUID());
         host.setClerkUserId("clerk_123");

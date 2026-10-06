@@ -74,6 +74,27 @@ public class R2StorageService {
         return presigner.presignGetObject(presignRequest).url().toString();
     }
 
+    /**
+     * Presigned GET that forces a download ("Save as") with the given filename, via the
+     * S3 {@code response-content-disposition} override (supported by R2). The filename is
+     * reduced to a safe ASCII form for the plain parameter and also sent RFC 5987-encoded.
+     */
+    public String presignAttachment(String objectKey, String filename) {
+        String safe = com.eventshare.api.common.util.ObjectKeys.sanitize(filename);
+        String encoded = java.net.URLEncoder.encode(filename == null || filename.isBlank() ? safe : filename,
+                java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+        GetObjectRequest get = GetObjectRequest.builder()
+                .bucket(r2.bucket())
+                .key(objectKey)
+                .responseContentDisposition("attachment; filename=\"" + safe + "\"; filename*=UTF-8''" + encoded)
+                .build();
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofSeconds(r2.presignDownloadTtlSeconds()))
+                .getObjectRequest(get)
+                .build();
+        return presigner.presignGetObject(presignRequest).url().toString();
+    }
+
     public Optional<HeadObjectResponse> headObject(String objectKey) {
         try {
             HeadObjectResponse response = s3Client.headObject(HeadObjectRequest.builder()

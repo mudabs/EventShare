@@ -14,6 +14,7 @@ import com.eventshare.api.event.dto.EventResponse;
 import com.eventshare.api.event.dto.JoinEventRequest;
 import com.eventshare.api.event.dto.JoinEventResponse;
 import com.eventshare.api.event.dto.PublicEventResponse;
+import com.eventshare.api.subscription.PlanLimitService;
 import com.eventshare.api.media.Media;
 import com.eventshare.api.media.MediaRepository;
 import com.eventshare.api.media.ModerationState;
@@ -39,6 +40,7 @@ public class EventService {
     private final RateLimiter rateLimiter;
     private final AppProperties props;
     private final R2StorageService storage;
+    private final PlanLimitService planLimits;
 
     public EventService(EventRepository events,
                         EventMembershipRepository memberships,
@@ -47,7 +49,9 @@ public class EventService {
                         AuditService audit,
                         RateLimiter rateLimiter,
                         AppProperties props,
-                        R2StorageService storage) {
+                        R2StorageService storage,
+                        PlanLimitService planLimits) {
+        this.planLimits = planLimits;
         this.events = events;
         this.memberships = memberships;
         this.media = media;
@@ -109,7 +113,7 @@ public class EventService {
     public PublicEventResponse getPublicByInviteCode(String inviteCode) {
         Event event = events.findByInviteCodeAndDeletedAtIsNull(inviteCode)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
-        return PublicEventResponse.from(event, resolveCoverUrl(event));
+        return PublicEventResponse.from(event, resolveCoverUrl(event), planLimits.hostHasZipExport(event));
     }
 
     private String resolveCoverUrl(Event event) {

@@ -204,3 +204,20 @@ depends on Clerk and R2 being configured. The demo admin and public credential d
 opt-in because the admin panel exposes real accounts on a live site. Alternatives
 considered: a Flyway seed migration (cannot create Clerk users or R2 objects, and would run
 in production), and an auth-bypass "demo login" (a standing back door).
+
+## ADR-018: ZIP downloads are built in the browser, gated by the host's plan
+
+Status. Accepted 2026-10-05. Context. Paid plans promise ZIP downloads of an event. The API
+runs on a home server behind a tunnel with limited upload bandwidth, while R2 serves files
+quickly and with free egress. Decision. The browser fetches originals directly from R2 and
+streams them into a ZIP with `client-zip` (store-only, since photos and videos are already
+compressed). On Chrome and Edge the ZIP streams straight to disk through the File System
+Access API; other browsers assemble it in memory, capped at 1.5 GB with a clear message.
+The public event summary exposes `zipDownloads` from the host's plan; the free plan gets
+per-file downloads only. Single-file downloads use a presigned URL with
+`response-content-disposition: attachment`, because browsers ignore `<a download>` on
+cross-origin URLs. Consequences. No server CPU or bandwidth spent on ZIPs. Requires the R2
+bucket CORS rule to allow GET from the app origin (already in place). Plan gating is a
+product boundary in the UI, not a security control, since guests can always save files one
+by one. Alternative considered: a server-side streaming ZIP endpoint, which works on every
+browser but pushes every byte through the home server's uplink.

@@ -18,7 +18,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -71,6 +73,9 @@ public class MediaController {
 
     @Operation(summary = "Delete your own uploaded media item from the shared gallery")
     @DeleteMapping("/api/events/code/{code}/media/{mediaId}")
+    // 204 No Content: an empty 200 made the web client's response.json() throw, so the
+    // delete succeeded but the UI reported "Delete failed" and never refreshed.
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteOwnMedia(@PathVariable String code,
                                @PathVariable UUID mediaId,
                                @Valid @RequestBody DeleteOwnMediaRequest request,

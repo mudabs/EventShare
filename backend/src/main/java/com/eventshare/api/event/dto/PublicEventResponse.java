@@ -13,9 +13,15 @@ public record PublicEventResponse(
         boolean showUploaderNames,
         boolean showUploadTimestamps,
         boolean anonymous,
-        String coverImageUrl
+        String coverImageUrl,
+        /* Host's plan includes ZIP downloads (paid plans). Drives the guest download UI. */
+        boolean zipDownloads
 ) {
     public static PublicEventResponse from(Event event, String coverImageUrl) {
+        return from(event, coverImageUrl, false);
+    }
+
+    public static PublicEventResponse from(Event event, String coverImageUrl, boolean zipDownloads) {
         boolean anon = event.getUploaderVisibility() == UploaderVisibility.ANONYMOUS;
         return new PublicEventResponse(
                 event.getName(),
@@ -25,6 +31,7 @@ public record PublicEventResponse(
                 event.isShowUploaderNames() && !anon,
                 event.isShowUploadTimestamps(),
                 anon,
-                coverImageUrl);
+                coverImageUrl,
+                zipDownloads);
     }
 }
