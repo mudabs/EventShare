@@ -68,7 +68,7 @@ class DemoUploadCountIT {
         event.setEventType(EventType.WEDDING);
         event.setInviteCode("DC" + UUID.randomUUID().toString().substring(0, 8));
         event.setStatus(EventStatus.ACTIVE);
-        return events.save(event);
+        return events.saveAndFlush(event);
     }
 
     private void upload(UUID eventId, boolean seeded, ModerationState state, String ipHash) {
