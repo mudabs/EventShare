@@ -221,3 +221,19 @@ bucket CORS rule to allow GET from the app origin (already in place). Plan gatin
 product boundary in the UI, not a security control, since guests can always save files one
 by one. Alternative considered: a server-side streaming ZIP endpoint, which works on every
 browser but pushes every byte through the home server's uplink.
+
+## ADR-019: Public demo guardrails are enforced at reservation time
+
+Status. Accepted 2026-10-05. Context. The live app is both a real paid product and a recruiter
+demo. A publicly shared demo event must remain useful for interviews without becoming a free
+event-hosting service. Decision. Keep Stripe and ordinary customer data fully enabled, but
+restrict the Clerk-backed demo host to the two seeded invite codes, optionally make the public
+demo read-only, and otherwise cap new upload reservations per reset and per-file bytes. The API
+checks these rules after locking the host row and before inserting the PENDING media row or
+creating a presigned upload URL. Demo-seeded rows carry an explicit marker added by a Flyway
+migration, so the cap does not depend on timestamps and resets cleanly when demo events are
+recreated. Consequences. Hiding a button is only a user-experience improvement; the server
+remains the security boundary. Deleted demo uploads still consume that reset's allowance,
+preventing upload/delete loops. The nightly reset remains the reset boundary. Alternative
+considered: relying on the unlimited demo plan or counting recent timestamps, both of which
+either bypass the intended cap or make the limit unreliable after a reset.

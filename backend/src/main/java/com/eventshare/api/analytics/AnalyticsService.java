@@ -5,6 +5,7 @@ import com.eventshare.api.analytics.dto.OwnerDashboardResponse;
 import com.eventshare.api.analytics.dto.UserDashboardResponse;
 import com.eventshare.api.common.error.ForbiddenException;
 import com.eventshare.api.common.error.NotFoundException;
+import com.eventshare.api.demo.DemoGuard;
 import com.eventshare.api.event.Event;
 import com.eventshare.api.event.EventMembershipRepository;
 import com.eventshare.api.event.EventRepository;
@@ -44,17 +45,20 @@ public class AnalyticsService {
     private final MediaRepository media;
     private final EventVisitRepository visits;
     private final MembershipService membershipService;
+    private final DemoGuard demoGuard;
 
     public AnalyticsService(EventRepository events,
                             EventMembershipRepository memberships,
                             MediaRepository media,
                             EventVisitRepository visits,
-                            MembershipService membershipService) {
+                            MembershipService membershipService,
+                            DemoGuard demoGuard) {
         this.events = events;
         this.memberships = memberships;
         this.media = media;
         this.visits = visits;
         this.membershipService = membershipService;
+        this.demoGuard = demoGuard;
     }
 
     /** Records (or refreshes) a distinct visit. Safe under the unique-key race. */
@@ -92,6 +96,7 @@ public class AnalyticsService {
         if (!event.getHostId().equals(host.getId())) {
             throw new ForbiddenException("You do not have access to this event");
         }
+        demoGuard.assertCanManage(host, event);
 
         long photos = media.countByEventIdAndMediaTypeAndModerationStateNot(
                 eventId, MediaType.PHOTO, ModerationState.DELETED);

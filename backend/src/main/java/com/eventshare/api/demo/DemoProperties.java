@@ -31,6 +31,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param resetZone        time zone for {@code resetCron}
  * @param showCredentials  expose the demo logins on the public /api/demo/info endpoint
  *                         (shown on the landing page). Only for throwaway demo accounts
+ * @param guestUploadsEnabled whether guests may upload to the seeded public event
+ * @param maxGuestUploads maximum non-seeded upload reservations per reset for the public event
+ * @param maxGuestUploadBytes maximum size of one public-demo upload
+ * @param maxGuestUploadsPerIp maximum upload reservations per client IP address per reset
+ *                         (default 4), so one visitor cannot use the whole shared allowance
  */
 @ConfigurationProperties(prefix = "eventshare.demo")
 public record DemoProperties(
@@ -50,7 +55,11 @@ public record DemoProperties(
         int photoCount,
         String resetCron,
         String resetZone,
-        boolean showCredentials
+        boolean showCredentials,
+        boolean guestUploadsEnabled,
+        int maxGuestUploads,
+        long maxGuestUploadBytes,
+        int maxGuestUploadsPerIp
 ) {
     public DemoProperties {
         hostUsername = blankToDefault(hostUsername, "demo-host");
@@ -65,6 +74,9 @@ public record DemoProperties(
         photoCount = photoCount <= 0 ? 18 : Math.min(photoCount, 60);
         resetCron = blankToDefault(resetCron, "0 0 4 * * *");
         resetZone = blankToDefault(resetZone, "America/Chicago");
+        maxGuestUploads = Math.max(0, maxGuestUploads);
+        maxGuestUploadBytes = maxGuestUploadBytes <= 0 ? 25L * 1024 * 1024 : maxGuestUploadBytes;
+        maxGuestUploadsPerIp = maxGuestUploadsPerIp <= 0 ? 4 : maxGuestUploadsPerIp;
     }
 
     /**
@@ -92,7 +104,11 @@ public record DemoProperties(
                 + ", inviteCode=" + inviteCode + ", secondaryInviteCode=" + secondaryInviteCode
                 + ", promoCode=" + promoCode + ", photoCount=" + photoCount
                 + ", resetCron=" + resetCron + ", resetZone=" + resetZone
-                + ", showCredentials=" + showCredentials + "]";
+                + ", showCredentials=" + showCredentials
+                + ", guestUploadsEnabled=" + guestUploadsEnabled
+                + ", maxGuestUploads=" + maxGuestUploads
+                + ", maxGuestUploadBytes=" + maxGuestUploadBytes
+                + ", maxGuestUploadsPerIp=" + maxGuestUploadsPerIp + "]";
     }
 
     private static String mask(String secret) {

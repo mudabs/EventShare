@@ -9,6 +9,7 @@ import com.eventshare.api.common.error.UploadRejectedException;
 import com.eventshare.api.common.util.ObjectKeys;
 import com.eventshare.api.common.util.RateLimiter;
 import com.eventshare.api.config.AppProperties;
+import com.eventshare.api.demo.DemoGuard;
 import com.eventshare.api.event.Event;
 import com.eventshare.api.event.EventMembership;
 import com.eventshare.api.event.EventMembershipRepository;
@@ -62,6 +63,7 @@ public class MediaService {
     private final MeterRegistry meterRegistry;
     private final UserRepository users;
     private final PlanLimitService planLimits;
+    private final DemoGuard demoGuard;
 
     public MediaService(MediaRepository media,
                         EventRepository events,
@@ -72,9 +74,11 @@ public class MediaService {
                         AppProperties props,
                         MeterRegistry meterRegistry,
                         UserRepository users,
-                        PlanLimitService planLimits) {
+                        PlanLimitService planLimits,
+                        DemoGuard demoGuard) {
         this.users = users;
         this.planLimits = planLimits;
+        this.demoGuard = demoGuard;
         this.media = media;
         this.events = events;
         this.memberships = memberships;
@@ -139,6 +143,9 @@ public class MediaService {
         if (event.getHostId() != null) {
             users.findByIdForUpdate(event.getHostId());
         }
+        // change 2026-10-05-DG: the host-row lock serialises both normal plan quotas and the public-demo
+        // reservation counts (shared and per IP, DG6), so parallel guests cannot all consume the last slot.
+        String demoIpHash = demoGuard.assertGuestUploadAllowed(event, request.sizeBytes(), clientIp);
         planLimits.checkCanUpload(event, mediaType, request.sizeBytes());
 
         UUID mediaId = UUID.randomUUID();
@@ -156,6 +163,7 @@ public class MediaService {
         entity.setObjectKey(objectKey);
         entity.setStatus(MediaStatus.PENDING);
         entity.setModerationState(event.isAutoApprove() ? ModerationState.VISIBLE : ModerationState.HIDDEN);
+        entity.setUploaderIpHash(demoIpHash);
         media.save(entity);
 
         String uploadUrl = storage.presignUpload(objectKey, contentType, request.sizeBytes());

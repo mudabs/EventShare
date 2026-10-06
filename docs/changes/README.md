@@ -7,6 +7,7 @@ how it was tested, compatibility notes, and how to roll back. Newest first. Chan
 
 | Date | Write-up | Summary |
 |---|---|---|
+| 2026-10-05 | [Public demo guardrails](2026-10-05-public-demo-guardrails.md) | API-enforced upload cap and 25 MiB file limit, read-only switch, demo-host event restrictions, and reliable reset-scoped counting |
 | 2026-10-05 | [Gallery downloads and delete fix](2026-10-05-gallery-downloads-and-delete-fix.md) | Guest delete no longer reports a false failure; real file downloads; ZIP downloads for paid plans; selection-only download button; viewer counter hardening; signed-in uploaders can delete their photos; uploader name label fixed |
 | 2026-10-05 | [Interview demo mode](2026-10-05-interview-demo-mode.md) | Seeded demo logins via Clerk, showcase events with generated photos, nightly reset, one-command local demo |
 | 2026-10-05 | [Security and correctness hardening](2026-10-05-security-and-correctness-hardening.md) | Upload size enforcement, guest delete authorisation, race-safe quotas, membership validation, replica-safe processing, docs refresh |

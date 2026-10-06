@@ -7,6 +7,7 @@ import com.eventshare.api.common.error.QuotaExceededException;
 import com.eventshare.api.common.error.TooManyRequestsException;
 import com.eventshare.api.common.error.UploadRejectedException;
 import com.eventshare.api.config.AppProperties;
+import com.eventshare.api.demo.DemoGuard;
 import com.eventshare.api.event.Event;
 import com.eventshare.api.event.EventMembershipRepository;
 import com.eventshare.api.event.EventRepository;
@@ -48,6 +49,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,6 +65,7 @@ class MediaServiceTest {
     @Mock com.eventshare.api.common.util.RateLimiter rateLimiter;
     @Mock UserRepository users;
     @Mock PlanLimitService planLimits;
+    @Mock DemoGuard demoGuard;
 
     MediaService service;
 
@@ -90,7 +93,7 @@ class MediaServiceTest {
     @BeforeEach
     void setUp() {
         service = new MediaService(media, events, memberships, storage, audit, rateLimiter, props(),
-                new SimpleMeterRegistry(), users, planLimits);
+                new SimpleMeterRegistry(), users, planLimits, demoGuard);
         when(rateLimiter.tryAcquire(any(), anyInt())).thenReturn(true);
         when(media.save(any(Media.class))).thenAnswer(i -> i.getArgument(0));
         when(storage.presignDownload(anyString())).thenReturn("https://r2.example/dl");
@@ -158,10 +161,35 @@ class MediaServiceTest {
         service.requestUploadUrl(new UploadUrlRequest(
                 "CODE123456", "a.jpg", "image/jpeg", 100L, "Guest", null), "203.0.113.1");
 
-        var order = inOrder(users, planLimits, media);
+        var order = inOrder(users, demoGuard, planLimits, media);
         order.verify(users).findByIdForUpdate(event.getHostId());
+        // DG2/DG6: the demo caps are checked under the same lock, before anything is reserved.
+        order.verify(demoGuard).assertGuestUploadAllowed(event, 100L, "203.0.113.1");
         order.verify(planLimits).checkCanUpload(event, MediaType.PHOTO, 100L);
         order.verify(media).save(any(Media.class));
+    }
+
+    @Test
+    void demoUploadStoresIpHashAndRejectedDemoUploadReservesNothing() {
+        Event event = activeEvent(true);
+        when(events.findByInviteCodeAndDeletedAtIsNull("CODE123456")).thenReturn(Optional.of(event));
+        when(storage.presignUpload(anyString(), anyString(), anyLong())).thenReturn("https://r2.example/put");
+        when(demoGuard.assertGuestUploadAllowed(event, 100L, "203.0.113.1")).thenReturn("a".repeat(64));
+
+        service.requestUploadUrl(new UploadUrlRequest(
+                "CODE123456", "a.jpg", "image/jpeg", 100L, "Guest", null), "203.0.113.1");
+
+        ArgumentCaptor<Media> captor = ArgumentCaptor.forClass(Media.class);
+        verify(media).save(captor.capture());
+        assertThat(captor.getValue().getUploaderIpHash()).isEqualTo("a".repeat(64));
+
+        when(demoGuard.assertGuestUploadAllowed(event, 200L, "203.0.113.1"))
+                .thenThrow(new QuotaExceededException("cap"));
+        assertThatThrownBy(() -> service.requestUploadUrl(new UploadUrlRequest(
+                "CODE123456", "b.jpg", "image/jpeg", 200L, "Guest", null), "203.0.113.1"))
+                .isInstanceOf(QuotaExceededException.class);
+        verify(media, times(1)).save(any(Media.class));
+        verify(storage, times(1)).presignUpload(anyString(), anyString(), anyLong());
     }
 
     @Test

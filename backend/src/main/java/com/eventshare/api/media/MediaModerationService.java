@@ -3,6 +3,7 @@ package com.eventshare.api.media;
 import com.eventshare.api.audit.AuditService;
 import com.eventshare.api.common.error.ForbiddenException;
 import com.eventshare.api.common.error.NotFoundException;
+import com.eventshare.api.demo.DemoGuard;
 import com.eventshare.api.event.Event;
 import com.eventshare.api.event.EventRepository;
 import com.eventshare.api.media.dto.GalleryPageResponse;
@@ -28,13 +29,16 @@ public class MediaModerationService {
     private final EventRepository events;
     private final R2StorageService storage;
     private final AuditService audit;
+    private final DemoGuard demoGuard;
 
     public MediaModerationService(MediaRepository media, EventRepository events,
-                                  R2StorageService storage, AuditService audit) {
+                                  R2StorageService storage, AuditService audit,
+                                  DemoGuard demoGuard) {
         this.media = media;
         this.events = events;
         this.storage = storage;
         this.audit = audit;
+        this.demoGuard = demoGuard;
     }
 
     @Transactional
@@ -60,7 +64,8 @@ public class MediaModerationService {
     /** Irreversible: removes the R2 objects and the database row. */
     @Transactional
     public void permanentDelete(User host, UUID eventId, UUID mediaId) {
-        requireOwner(host, eventId);
+        Event event = requireOwner(host, eventId);
+        demoGuard.assertCanPermanentlyDelete(event); // DG7
         Media item = media.findByIdAndEventId(mediaId, eventId)
                 .orElseThrow(() -> new NotFoundException("Media not found"));
         storage.deleteObject(item.getObjectKey());
@@ -99,12 +104,14 @@ public class MediaModerationService {
         return new GalleryPageResponse(items, nextCursor, hasMore);
     }
 
-    private void requireOwner(User host, UUID eventId) {
+    private Event requireOwner(User host, UUID eventId) {
         Event event = events.findByIdAndDeletedAtIsNull(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
         if (!event.getHostId().equals(host.getId())) {
             throw new ForbiddenException("You do not have access to this event");
         }
+        demoGuard.assertCanManage(host, event);
+        return event;
     }
 
     private MediaResponse toResponse(Media m) {

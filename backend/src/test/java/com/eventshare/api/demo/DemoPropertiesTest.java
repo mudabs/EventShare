@@ -15,7 +15,7 @@ class DemoPropertiesTest {
     @Test
     void blankSettingsFallBackToSafeDefaults() {
         DemoProperties p = new DemoProperties(false, "", "", null, " ", false, null, null, null, null,
-                "", null, null, 0, null, "", false);
+                "", null, null, 0, null, "", false, true, 8, 0, 0);
 
         assertThat(p.hostUsername()).isEqualTo("demo-host");
         assertThat(p.adminUsername()).isEqualTo("demo-admin");
@@ -29,6 +29,9 @@ class DemoPropertiesTest {
         assertThat(p.promoCode()).isEqualTo("INTERVIEW30");
         assertThat(p.photoCount()).isEqualTo(18);
         assertThat(p.resetZone()).isEqualTo("America/Chicago");
+        assertThat(p.maxGuestUploads()).isEqualTo(8);
+        assertThat(p.maxGuestUploadBytes()).isEqualTo(25L * 1024 * 1024);
+        assertThat(p.maxGuestUploadsPerIp()).isEqualTo(4);
         // Passwords are never defaulted: they must come from the environment.
         assertThat(p.hostPassword()).isNull();
     }
@@ -36,7 +39,7 @@ class DemoPropertiesTest {
     @Test
     void inviteCodesAreUpperCasedAndPhotoCountIsCapped() {
         DemoProperties p = new DemoProperties(true, null, "host@mydomain.dev", "x", null, false, null, null, null, null,
-                "mycode2345", "other23456", "promo1", 500, null, null, false);
+                "mycode2345", "other23456", "promo1", 500, null, null, false, true, 8, 25L * 1024 * 1024, 4);
         assertThat(p.hostLocalEmail()).isEqualTo("host@mydomain.dev");
         assertThat(p.inviteCode()).isEqualTo("MYCODE2345");
         assertThat(p.promoCode()).isEqualTo("PROMO1");

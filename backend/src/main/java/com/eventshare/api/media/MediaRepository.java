@@ -62,6 +62,12 @@ public interface MediaRepository extends JpaRepository<Media, UUID> {
 
     long countByEventIdAndCreatedAtAfter(UUID eventId, Instant after);
 
+    /** Counts all non-seeded demo reservations, including deleted rows. */
+    long countByEventIdAndDemoSeededFalse(UUID eventId);
+
+    /** Same, limited to one hashed client IP (per-visitor demo cap, DG6). */
+    long countByEventIdAndDemoSeededFalseAndUploaderIpHash(UUID eventId, String uploaderIpHash);
+
     @Query("""
             select m.createdAt from Media m
             where m.eventId = :eventId and m.moderationState <> :excluded and m.createdAt >= :since

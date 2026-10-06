@@ -84,9 +84,28 @@ export default function EventPage() {
               </div>
             </div>
 
-            {event.active ? (
+            {event.active && event.guestUploadsEnabled !== false ? (
               identity ? (
-                <UploadButton code={code} />
+                event.demoUploadsRemaining === 0 ? (
+                  <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
+                    You have used all your demo uploads (or the demo is full for today). The demo
+                    resets every night; you can still browse and download the photos.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <UploadButton
+                      code={code}
+                      remaining={event.demoUploadsRemaining ?? null}
+                      maxBytes={event.demoMaxUploadBytes ?? null}
+                    />
+                    {event.demoUploadsRemaining != null && (
+                      <p className="text-center text-xs text-ink/50">
+                        Demo: {event.demoUploadsRemaining} upload{event.demoUploadsRemaining === 1 ? '' : 's'} left
+                        {event.demoMaxUploadBytes ? `, up to ${Math.round(event.demoMaxUploadBytes / 1048576)} MB each` : ''}.
+                      </p>
+                    )}
+                  </div>
+                )
               ) : isSignedIn ? (
                 <AuthedEventJoin code={code} onJoined={() => undefined} />
               ) : (
@@ -105,6 +124,10 @@ export default function EventPage() {
                   <JoinPrompt code={code} onJoined={() => undefined} />
                 </div>
               )
+            ) : event.active ? (
+              <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
+                This demo gallery is currently read-only. You can still browse the photos.
+              </p>
             ) : (
               <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
                 This event is archived. You can still browse the gallery below.

@@ -79,4 +79,15 @@ public class Media extends BaseEntity {
 
     @Column(name = "duplicate_of_id")
     private UUID duplicateOfId;
+
+    /** True only for photos inserted by the nightly demo seeder (change 2026-10-05-DG). */
+    @Column(name = "demo_seeded", nullable = false)
+    private boolean demoSeeded = false;
+
+    /**
+     * Salted SHA-256 of the uploader's IP, set only for uploads to the public demo event so
+     * the per-IP cap can be enforced (DG6). Null for every other upload.
+     */
+    @Column(name = "uploader_ip_hash", length = 64)
+    private String uploaderIpHash;
 }

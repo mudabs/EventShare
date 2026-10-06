@@ -7,7 +7,20 @@ import { uploadCapturedFile } from '@/lib/upload';
 import { useGuestStore } from '@/store/guestStore';
 import { CameraCapture } from './CameraCapture';
 
-export function UploadButton({ code }: { code: string }) {
+interface UploadButtonProps {
+  code: string;
+  /** Demo event: uploads this visitor has left. Extra files beyond it are not attempted. */
+  remaining?: number | null;
+  /** Demo event: per-file size cap; larger files are rejected before any upload starts. */
+  maxBytes?: number | null;
+}
+
+function formatMb(bytes: number) {
+  const mb = bytes / (1024 * 1024);
+  return Number.isInteger(mb) ? `${mb} MB` : `${mb.toFixed(1)} MB`;
+}
+
+export function UploadButton({ code, remaining = null, maxBytes = null }: UploadButtonProps) {
   const identity = useGuestStore((s) => s.identities[code]);
   const queryClient = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -17,12 +30,35 @@ export function UploadButton({ code }: { code: string }) {
 
   async function refreshGallery() {
     await queryClient.invalidateQueries({ queryKey: queryKeys.gallery(code) });
+    // The public event carries the demo "uploads left" count; refresh it too.
+    await queryClient.invalidateQueries({ queryKey: queryKeys.publicEvent(code) });
+  }
+
+  /** Applies the demo limits in the browser so visitors get a clear message up front. */
+  function applyDemoLimits(files: File[]): File[] {
+    let list = files;
+    if (maxBytes != null) {
+      const tooBig = list.filter((f) => f.size > maxBytes);
+      if (tooBig.length) {
+        setError(`Demo uploads are limited to ${formatMb(maxBytes)} per file; skipped ${tooBig.length} file${tooBig.length === 1 ? '' : 's'}.`);
+        list = list.filter((f) => f.size <= maxBytes);
+      }
+    }
+    if (remaining != null && list.length > remaining) {
+      setError(`You can add ${remaining} more photo${remaining === 1 ? '' : 's'} to the demo; only the first ${remaining} will be uploaded.`);
+      list = list.slice(0, Math.max(0, remaining));
+    }
+    return list;
   }
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     setError(null);
-    const list = Array.from(files);
+    const list = applyDemoLimits(Array.from(files));
+    if (list.length === 0) {
+      if (fileInput.current) fileInput.current.value = '';
+      return;
+    }
     setProgress({ done: 0, total: list.length });
     for (let i = 0; i < list.length; i++) {
       try {
@@ -39,6 +75,7 @@ export function UploadButton({ code }: { code: string }) {
 
   async function handleCaptured(file: File) {
     setError(null);
+    if (applyDemoLimits([file]).length === 0) return;
     setProgress({ done: 0, total: 1 });
     try {
       await uploadCapturedFile(code, file, identity);

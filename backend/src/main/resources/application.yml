@@ -100,6 +100,12 @@ eventshare:
     reset-cron: ${DEMO_RESET_CRON:0 0 4 * * *}
     reset-zone: ${DEMO_RESET_ZONE:America/Chicago}
     show-credentials: ${DEMO_SHOW_CREDENTIALS:false}
+    # Public demo guardrails. These are enforced by the API before a media row and
+    # presigned URL are created; the frontend values are only a convenience.
+    guest-uploads-enabled: ${DEMO_GUEST_UPLOADS_ENABLED:true}
+    max-guest-uploads: ${DEMO_MAX_GUEST_UPLOADS:8}
+    max-guest-upload-bytes: ${DEMO_MAX_GUEST_UPLOAD_BYTES:26214400}
+    max-guest-uploads-per-ip: ${DEMO_MAX_GUEST_UPLOADS_PER_IP:4}
   stripe:
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}

@@ -1,5 +1,6 @@
 package com.eventshare.api.billing;
 
+import com.eventshare.api.demo.DemoGuard;
 import com.eventshare.api.common.error.BadRequestException;
 import com.eventshare.api.subscription.SubscriptionService;
 import com.eventshare.api.subscription.SubscriptionSource;
@@ -19,8 +20,11 @@ public class BillingService {
     private final StripeGateway gateway;
     private final UserRepository users;
     private final SubscriptionService subscriptions;
+    private final DemoGuard demoGuard;
 
-    public BillingService(StripeGateway gateway, UserRepository users, SubscriptionService subscriptions) {
+    public BillingService(StripeGateway gateway, UserRepository users, SubscriptionService subscriptions,
+                          DemoGuard demoGuard) {
+        this.demoGuard = demoGuard;
         this.gateway = gateway;
         this.users = users;
         this.subscriptions = subscriptions;
@@ -28,6 +32,7 @@ public class BillingService {
 
     @Transactional
     public String createCheckout(User user, String planCode) {
+        demoGuard.assertCanUseBilling(user); // DG8: shared demo login must not reach Stripe
         if (!gateway.isConfigured()) {
             throw new BadRequestException("Billing is not configured on the server");
         }
@@ -40,6 +45,7 @@ public class BillingService {
 
     @Transactional
     public String createPortal(User user) {
+        demoGuard.assertCanUseBilling(user); // DG8
         if (user.getStripeCustomerId() == null || user.getStripeCustomerId().isBlank()) {
             throw new BadRequestException("No billing account exists for this user yet");
         }

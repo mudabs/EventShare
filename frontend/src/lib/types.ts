@@ -13,6 +13,12 @@ export interface PublicEvent {
   coverImageUrl: string | null;
   /** The host's plan includes ZIP downloads (Basic, Wedding Pro, Lifetime, or unlimited). */
   zipDownloads: boolean;
+  /** Whether the event currently accepts guest uploads. */
+  guestUploadsEnabled: boolean;
+  /** Demo event only (null otherwise): uploads this visitor can still make. */
+  demoUploadsRemaining?: number | null;
+  /** Demo event only (null otherwise): per-file size cap in bytes. */
+  demoMaxUploadBytes?: number | null;
 }
 
 export interface EventResponse {
@@ -226,6 +232,10 @@ export interface DemoInfo {
   guestUrl?: string;
   resetCron?: string;
   resetZone?: string;
+  guestUploadsEnabled?: boolean;
+  maxGuestUploads?: number;
+  maxGuestUploadBytes?: number;
+  maxGuestUploadsPerIp?: number;
   /** Present only when the server sets DEMO_SHOW_CREDENTIALS=true. */
   logins?: { role: string; username: string; password: string }[];
 }

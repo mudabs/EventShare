@@ -390,6 +390,7 @@ public class DemoSeeder {
         row.setSizeBytes((long) p.bytes().length);
         row.setObjectKey(p.objectKey());
         row.setSha256(p.sha256());
+        row.setDemoSeeded(true);
         // UPLOADED: the regular in-process processor generates thumbnails, exactly as
         // for a real guest upload.
         row.setStatus(MediaStatus.UPLOADED);
@@ -529,6 +530,10 @@ public class DemoSeeder {
                 "secondaryInviteCode", props.secondaryInviteCode(),
                 "promoCode", props.promoCode(),
                 "resetCron", props.resetCron(),
-                "resetZone", props.resetZone());
+                "resetZone", props.resetZone(),
+                "guestUploadsEnabled", props.guestUploadsEnabled(),
+                "maxGuestUploads", props.maxGuestUploads(),
+                "maxGuestUploadBytes", props.maxGuestUploadBytes(),
+                "maxGuestUploadsPerIp", props.maxGuestUploadsPerIp());
     }
 }

@@ -8,6 +8,7 @@ import com.eventshare.api.common.error.TooManyRequestsException;
 import com.eventshare.api.common.util.InviteCodeGenerator;
 import com.eventshare.api.common.util.RateLimiter;
 import com.eventshare.api.config.AppProperties;
+import com.eventshare.api.demo.DemoGuard;
 import com.eventshare.api.event.dto.CreateEventRequest;
 import com.eventshare.api.event.dto.EventAnalyticsResponse;
 import com.eventshare.api.event.dto.EventResponse;
@@ -41,6 +42,7 @@ public class EventService {
     private final AppProperties props;
     private final R2StorageService storage;
     private final PlanLimitService planLimits;
+    private final DemoGuard demoGuard;
 
     public EventService(EventRepository events,
                         EventMembershipRepository memberships,
@@ -50,8 +52,10 @@ public class EventService {
                         RateLimiter rateLimiter,
                         AppProperties props,
                         R2StorageService storage,
-                        PlanLimitService planLimits) {
+                        PlanLimitService planLimits,
+                        DemoGuard demoGuard) {
         this.planLimits = planLimits;
+        this.demoGuard = demoGuard;
         this.events = events;
         this.memberships = memberships;
         this.media = media;
@@ -64,6 +68,8 @@ public class EventService {
 
     @Transactional
     public EventResponse createEvent(User host, CreateEventRequest request) {
+        // change 2026-10-05-DG: shared demo credentials cannot create arbitrary events.
+        demoGuard.assertCanCreateEvent(host);
         Event event = new Event();
         event.setHostId(host.getId());
         event.setName(request.name().trim());
@@ -103,6 +109,7 @@ public class EventService {
     @Transactional
     public void deleteEvent(User host, UUID eventId) {
         Event event = loadOwned(eventId, host);
+        demoGuard.assertCanDeleteEvent(event); // DG7
         event.setDeletedAt(Instant.now());
         events.save(event);
         audit.record(eventId, host.getId(), host.getDisplayName(), "EVENT_DELETED",
@@ -111,9 +118,20 @@ public class EventService {
 
     @Transactional(readOnly = true)
     public PublicEventResponse getPublicByInviteCode(String inviteCode) {
+        return getPublicByInviteCode(inviteCode, null);
+    }
+
+    /**
+     * Public summary. {@code clientIp} lets demo events report how many uploads this
+     * visitor has left (DG9), so the page can say so before a file is picked.
+     */
+    @Transactional(readOnly = true)
+    public PublicEventResponse getPublicByInviteCode(String inviteCode, String clientIp) {
         Event event = events.findByInviteCodeAndDeletedAtIsNull(inviteCode)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
-        return PublicEventResponse.from(event, resolveCoverUrl(event), planLimits.hostHasZipExport(event));
+        return PublicEventResponse.from(event, resolveCoverUrl(event), planLimits.hostHasZipExport(event),
+                demoGuard.guestUploadsEnabled(event), demoGuard.remainingGuestUploads(event, clientIp),
+                demoGuard.maxUploadBytes(event));
     }
 
     private String resolveCoverUrl(Event event) {
@@ -169,6 +187,7 @@ public class EventService {
         if (!event.getHostId().equals(host.getId())) {
             throw new ForbiddenException("You do not have access to this event");
         }
+        demoGuard.assertCanManage(host, event);
         return event;
     }
 

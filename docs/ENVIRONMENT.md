@@ -84,6 +84,13 @@ DEMO_RESET_CRON, DEMO_RESET_ZONE. Spring cron and zone for the automatic reset (
 `0 0 4 * * *`, `America/Chicago`).
 DEMO_SHOW_CREDENTIALS. When true, `GET /api/demo/info` and the landing page show the demo
 logins.
+DEMO_GUEST_UPLOADS_ENABLED. Whether the seeded public demo event shows and accepts guest
+uploads. The API enforces this; setting it false makes the public event read-only.
+DEMO_MAX_GUEST_UPLOADS. Maximum non-seeded upload reservations for the public demo event
+between resets (default 8). Deleted or failed reservations still count until the nightly reset.
+DEMO_MAX_GUEST_UPLOADS_PER_IP. Maximum reservations per visitor (client IP) within the shared
+total (default 4), so one visitor cannot use the whole allowance.
+DEMO_MAX_GUEST_UPLOAD_BYTES. Maximum size of one public-demo upload (default 26214400, 25 MiB).
 EVENTSHARE_HTTP_PORT. Host port for the app's nginx on 127.0.0.1 (default 8088; the local
 demo uses 8090). Used by: docker compose.
 

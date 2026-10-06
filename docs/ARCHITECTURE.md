@@ -69,7 +69,7 @@ sequenceDiagram
   G->>API: POST /api/media/upload-url { inviteCode, filename, contentType, sizeBytes, membershipId? }
   API->>API: Rate limit, validate type and size, resolve active event
   API->>DB: Validate membership (if sent), SELECT host user FOR UPDATE
-  API->>DB: Count usage vs plan limits, insert media row (PENDING)
+  API->>DB: Count plan/demo usage under host-row lock, insert media row (PENDING)
   API-->>G: { mediaId, uploadUrl (presigned PUT, signs Content-Type and Content-Length) }
   G->>R2: PUT bytes directly to uploadUrl
   G->>API: POST /api/media/{id}/complete { sha256 }

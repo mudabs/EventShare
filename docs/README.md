@@ -3,7 +3,7 @@
 | Document | Purpose | Status |
 |---|---|---|
 | `ARCHITECTURE.md` | Components, data flows, security, concurrency, scalability | Current (reviewed 2026-10-05) |
-| `DECISIONS.md` | Architecture decision records (ADR-001 to ADR-018) | Current |
+| `DECISIONS.md` | Architecture decision records (ADR-001 to ADR-019) | Current |
 | `API.md` | REST endpoint reference | Current |
 | `ERD.md` | Database schema reference | Current |
 | `ENVIRONMENT.md` | Every environment variable | Current |

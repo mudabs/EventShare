@@ -63,7 +63,7 @@ OTHER.
 
 ```json
 { "name": "Sam & Tari's Wedding", "eventType": "WEDDING",
-  "active": true, "allowGuestDownloads": true }
+  "active": true, "allowGuestDownloads": true, "guestUploadsEnabled": true }
 ```
 
 ### Join event (guest)
@@ -91,7 +91,13 @@ gallery hides "Download all" and builds ZIPs only when it is true.
 
 `membershipId` is optional. When present it must be an ACTIVE membership of this event
 (403 otherwise), and the stored uploader name is taken from the membership instead of
-`uploaderDisplayName`. Plan limits are checked here (403 with code `quota_exceeded`).
+`uploaderDisplayName`. Plan limits are checked here (403 with code `quota_exceeded`). For the
+public demo, the API also enforces `DEMO_GUEST_UPLOADS_ENABLED`,
+`DEMO_MAX_GUEST_UPLOADS`, `DEMO_MAX_GUEST_UPLOADS_PER_IP` and `DEMO_MAX_GUEST_UPLOAD_BYTES`
+before creating the reservation; the defaults are 25 MB per file, 8 uploads per reset in total
+and 4 per client IP. For demo events, the public event summary also returns
+`demoUploadsRemaining` (for the calling visitor) and `demoMaxUploadBytes`; both are `null`
+for every other event.
 
 Response. Upload the bytes with an HTTP PUT to `uploadUrl`, setting `Content-Type` to
 `requiredContentType`. The body must be exactly `sizeBytes` long: the URL signs

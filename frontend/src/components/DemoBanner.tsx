@@ -19,13 +19,16 @@ export function DemoBanner() {
 
   if (!data?.enabled || !data.inviteCode) return null;
 
+  const guestUploadsEnabled = data.guestUploadsEnabled !== false;
+
   return (
     <div className="card w-full max-w-md p-5 text-left">
       <p className="text-xs font-semibold uppercase tracking-wide text-brand">Live demo</p>
       <h2 className="mt-1 text-xl font-semibold">Try it without signing up</h2>
       <p className="mt-1 text-sm text-ink/70">
-        Open the sample wedding as a guest and upload a photo, or sign in as the host to see
-        moderation, analytics and the QR share card. Demo data resets every night.
+        Open the sample wedding as a guest{guestUploadsEnabled ? ' and upload a photo' : ''}, or
+        sign in as the host to see moderation, analytics and the QR share card. Demo data resets
+        every night.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link href={`/e/${data.inviteCode}`} className="btn-primary px-4 py-2 text-sm">

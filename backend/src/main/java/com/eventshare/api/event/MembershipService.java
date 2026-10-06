@@ -4,6 +4,7 @@ import com.eventshare.api.audit.AuditService;
 import com.eventshare.api.common.error.BadRequestException;
 import com.eventshare.api.common.error.ForbiddenException;
 import com.eventshare.api.common.error.NotFoundException;
+import com.eventshare.api.demo.DemoGuard;
 import com.eventshare.api.event.dto.JoinEventResponse;
 import com.eventshare.api.event.dto.MemberView;
 import com.eventshare.api.event.dto.MyEventCard;
@@ -33,17 +34,20 @@ public class MembershipService {
     private final MediaRepository media;
     private final R2StorageService storage;
     private final AuditService audit;
+    private final DemoGuard demoGuard;
 
     public MembershipService(EventRepository events,
                              EventMembershipRepository memberships,
                              MediaRepository media,
                              R2StorageService storage,
-                             AuditService audit) {
+                             AuditService audit,
+                             DemoGuard demoGuard) {
         this.events = events;
         this.memberships = memberships;
         this.media = media;
         this.storage = storage;
         this.audit = audit;
+        this.demoGuard = demoGuard;
     }
 
     /**
@@ -168,6 +172,7 @@ public class MembershipService {
         if (!event.getHostId().equals(host.getId())) {
             throw new ForbiddenException("You do not have access to this event");
         }
+        demoGuard.assertCanManage(host, event);
         return event;
     }
 

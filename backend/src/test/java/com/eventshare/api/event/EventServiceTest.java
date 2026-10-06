@@ -6,6 +6,7 @@ import com.eventshare.api.common.error.TooManyRequestsException;
 import com.eventshare.api.common.util.InviteCodeGenerator;
 import com.eventshare.api.common.util.RateLimiter;
 import com.eventshare.api.config.AppProperties;
+import com.eventshare.api.demo.DemoGuard;
 import com.eventshare.api.event.dto.CreateEventRequest;
 import com.eventshare.api.event.dto.EventResponse;
 import com.eventshare.api.event.dto.JoinEventRequest;
@@ -43,6 +44,7 @@ class EventServiceTest {
     @Mock AuditService audit;
     @Mock RateLimiter rateLimiter;
     @Mock PlanLimitService planLimits;
+    @Mock DemoGuard demoGuard;
 
     EventService service;
     User host;
@@ -60,7 +62,8 @@ class EventServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EventService(events, memberships, media, inviteCodes, audit, rateLimiter, props(), storage, planLimits);
+        service = new EventService(events, memberships, media, inviteCodes, audit, rateLimiter, props(), storage, planLimits,
+                demoGuard);
         host = new User();
         host.setId(UUID.randomUUID());
         host.setClerkUserId("clerk_123");

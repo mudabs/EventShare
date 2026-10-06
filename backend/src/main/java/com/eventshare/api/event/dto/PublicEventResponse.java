@@ -15,13 +15,28 @@ public record PublicEventResponse(
         boolean anonymous,
         String coverImageUrl,
         /* Host's plan includes ZIP downloads (paid plans). Drives the guest download UI. */
-        boolean zipDownloads
+        boolean zipDownloads,
+        boolean guestUploadsEnabled,
+        /* Demo events only (null otherwise): uploads this visitor may still make, and the per-file cap. */
+        Integer demoUploadsRemaining,
+        Long demoMaxUploadBytes
 ) {
     public static PublicEventResponse from(Event event, String coverImageUrl) {
         return from(event, coverImageUrl, false);
     }
 
     public static PublicEventResponse from(Event event, String coverImageUrl, boolean zipDownloads) {
+        return from(event, coverImageUrl, zipDownloads, true);
+    }
+
+    public static PublicEventResponse from(Event event, String coverImageUrl, boolean zipDownloads,
+                                           boolean guestUploadsEnabled) {
+        return from(event, coverImageUrl, zipDownloads, guestUploadsEnabled, null, null);
+    }
+
+    public static PublicEventResponse from(Event event, String coverImageUrl, boolean zipDownloads,
+                                           boolean guestUploadsEnabled, Integer demoUploadsRemaining,
+                                           Long demoMaxUploadBytes) {
         boolean anon = event.getUploaderVisibility() == UploaderVisibility.ANONYMOUS;
         return new PublicEventResponse(
                 event.getName(),
@@ -32,6 +47,9 @@ public record PublicEventResponse(
                 event.isShowUploadTimestamps(),
                 anon,
                 coverImageUrl,
-                zipDownloads);
+                zipDownloads,
+                guestUploadsEnabled,
+                demoUploadsRemaining,
+                demoMaxUploadBytes);
     }
 }

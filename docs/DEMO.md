@@ -8,7 +8,7 @@ app in an interview and show every feature in a few minutes. It can run on your 
 
 | Item | Details |
 |---|---|
-| Demo host account | Username `demo-host` (`DEMO_HOST_USERNAME`) and the password from `DEMO_HOST_PASSWORD`. No email needed. Unlimited plan (whitelisted). Owns both demo events |
+| Demo host account | Username `demo-host` (`DEMO_HOST_USERNAME`) and the password from `DEMO_HOST_PASSWORD`. No email needed. Unlimited plan (whitelisted). Can manage only the two seeded demo events and cannot create additional events |
 | Demo admin account | Optional (`DEMO_ADMIN_ENABLED`), username `demo-admin`. Platform admin, so you can show the admin panel |
 | "Amara & Kofi's Wedding" | Active wedding, invite code `EVENTSHARE`. 8 guests, 18 generated photos spread over the last two days, 1 exact duplicate (flagged), 2 hidden photos in the moderation view, 46 visitors over two weeks for the analytics charts |
 | "Product Team Offsite" | Archived conference event (code `TEAMDAY26X`) so the dashboard lists more than one event |
@@ -21,6 +21,19 @@ creates their thumbnails within a few seconds, exactly as for a real guest uploa
 Every reset (nightly at 04:00 America/Chicago, at first startup, or from the admin panel)
 deletes all events owned by the demo accounts and seeds them again. Anything an interviewer
 uploads or changes is gone the next morning. Real users' events are never touched.
+
+The public wedding event is deliberately bounded. By default it accepts 8 new upload
+reservations per reset, at most 4 from any one visitor (client IP), and each file is limited
+to 25 MiB; these limits are enforced in the
+upload-reservation API, so hiding the upload control is not the security boundary. Set
+`DEMO_GUEST_UPLOADS_ENABLED=false` for a completely read-only public demo. Reservations
+remain counted if a guest later deletes the media, preventing repeated upload/delete cycles
+from bypassing the cap.
+
+The shared demo login is also restricted on the seeded events themselves: it cannot delete
+them, rename them, change their cover photo, permanently delete photos, or open Stripe
+checkout or the billing portal. Hiding and restoring photos and the display toggles still
+work for the walkthrough, and the nightly reset restores them.
 
 ## Credentials: where they come from
 
@@ -92,6 +105,11 @@ redeploy. Differences from the local demo:
   protection for every account, which is the trade-off for a public demo login.
 - Pick a fixed password, put `DEMO_HOST_USERNAME` and `DEMO_HOST_PASSWORD` in the server's
   `.env`, and the same pair in your README. They stay valid until you change them.
+- Set `DEMO_GUEST_UPLOADS_ENABLED=true`, `DEMO_MAX_GUEST_UPLOADS=8`,
+  `DEMO_MAX_GUEST_UPLOADS_PER_IP=4` and `DEMO_MAX_GUEST_UPLOAD_BYTES=26214400` (or disable
+  uploads completely). These reach the API only because they are listed in
+  `docker-compose.yml`; a new `DEMO_*` setting must be added there too. The demo host is
+  whitelisted for billing-plan display but is still blocked from creating arbitrary events.
 - Keep `DEMO_ADMIN_ENABLED=false`. The admin panel shows every real account and can disable
   users; an interviewer must not get that on the live site. Show the admin panel from the
   local demo instead.

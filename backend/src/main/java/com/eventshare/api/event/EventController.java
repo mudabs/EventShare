@@ -69,8 +69,8 @@ public class EventController {
 
     @Operation(summary = "Public event summary for the join page")
     @GetMapping("/code/{code}")
-    public PublicEventResponse publicByCode(@PathVariable String code) {
-        return eventService.getPublicByInviteCode(code);
+    public PublicEventResponse publicByCode(@PathVariable String code, HttpServletRequest httpRequest) {
+        return eventService.getPublicByInviteCode(code, ClientIp.resolve(httpRequest));
     }
 
     @Operation(summary = "Join an event as a guest (no account required)")
