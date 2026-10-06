@@ -53,7 +53,10 @@ export function MediaTile({
         </span>
       )}
       {item.uploaderDisplayName && (
-        <span className="absolute bottom-0 w-full truncate bg-gradient-to-t from-black/60 to-transparent px-2 py-1 text-[11px] text-white opacity-0 transition group-hover:opacity-100">
+        // inset-x-0 pins the label to both edges. Without a left offset the absolutely
+        // positioned span started after the image's inline box, pushing the name off the
+        // right edge where the rounded corner clipped it.
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-3 pb-2 pt-6 text-left text-xs font-medium text-white opacity-0 transition group-hover:opacity-100">
           {item.uploaderDisplayName}
         </span>
       )}

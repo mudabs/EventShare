@@ -4,6 +4,7 @@ import com.eventshare.api.audit.AuditService;
 import com.eventshare.api.common.error.BadRequestException;
 import com.eventshare.api.common.error.ForbiddenException;
 import com.eventshare.api.common.error.NotFoundException;
+import com.eventshare.api.event.dto.JoinEventResponse;
 import com.eventshare.api.event.dto.MemberView;
 import com.eventshare.api.event.dto.MyEventCard;
 import com.eventshare.api.media.Media;
@@ -45,15 +46,33 @@ public class MembershipService {
         this.audit = audit;
     }
 
+    /**
+     * Joins (or re-joins) an event as a signed-in user and returns the membership.
+     *
+     * <p>The membership id is the credential for deleting your own uploads (ADR-016), so
+     * the web client must store it. This used to return nothing, which left signed-in
+     * uploaders without a membership id: their uploads were not linked to them and they
+     * could not delete them (G6). Idempotent: an existing membership is returned. The
+     * event owner gets their HOST membership (created if an old event lacks one).
+     */
     @Transactional
-    public void joinAsUser(User user, String inviteCode, String clientIp) {
+    public JoinEventResponse joinAsUser(User user, String inviteCode, String clientIp) {
         Event event = events.findByInviteCodeAndDeletedAtIsNull(inviteCode)
                 .orElseThrow(() -> new NotFoundException("Event not found"));
         if (!event.isActive()) {
             throw new ForbiddenException("This event is not currently accepting participants");
         }
         if (event.getHostId().equals(user.getId())) {
-            return; // the owner already has a HOST membership
+            EventMembership host = memberships.findByEventIdAndUserId(event.getId(), user.getId())
+                    .orElseGet(() -> {
+                        EventMembership created = new EventMembership();
+                        created.setEventId(event.getId());
+                        created.setUserId(user.getId());
+                        created.setRole(MembershipRole.HOST);
+                        created.setJoinedAt(Instant.now());
+                        return memberships.save(created);
+                    });
+            return toJoinResponse(host, event, user);
         }
 
         EventMembership membership = memberships
@@ -75,6 +94,13 @@ public class MembershipService {
 
         audit.record(event.getId(), user.getId(), user.getDisplayName(), "MEMBER_JOINED",
                 "MEMBERSHIP", saved.getId(), null, clientIp);
+        return toJoinResponse(saved, event, user);
+    }
+
+    private static JoinEventResponse toJoinResponse(EventMembership membership, Event event, User user) {
+        String name = membership.getGuestDisplayName() != null ? membership.getGuestDisplayName()
+                : user.getDisplayName() != null ? user.getDisplayName() : "Host";
+        return new JoinEventResponse(membership.getId(), event.getId(), event.getInviteCode(), event.getName(), name);
     }
 
     @Transactional(readOnly = true)

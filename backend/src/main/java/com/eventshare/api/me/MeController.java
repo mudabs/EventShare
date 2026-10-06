@@ -4,6 +4,7 @@ import com.eventshare.api.common.security.CurrentUser;
 import com.eventshare.api.common.util.ClientIp;
 import com.eventshare.api.event.MembershipService;
 import com.eventshare.api.event.dto.JoinByCodeRequest;
+import com.eventshare.api.event.dto.JoinEventResponse;
 import com.eventshare.api.event.dto.MyEventCard;
 import com.eventshare.api.me.dto.ProfileResponse;
 import com.eventshare.api.user.User;
@@ -36,11 +37,11 @@ public class MeController {
 
     @Operation(summary = "Join an event as a signed-in user (persistent membership)")
     @PostMapping("/events/join")
-    public ResponseEntity<Void> join(@CurrentUser User user,
-                                     @Valid @RequestBody JoinByCodeRequest request,
-                                     HttpServletRequest httpRequest) {
-        membershipService.joinAsUser(user, request.inviteCode(), ClientIp.resolve(httpRequest));
-        return ResponseEntity.noContent().build();
+    public JoinEventResponse join(@CurrentUser User user,
+                                  @Valid @RequestBody JoinByCodeRequest request,
+                                  HttpServletRequest httpRequest) {
+        // Returns the membership so the client can store membershipId (needed to delete own uploads).
+        return membershipService.joinAsUser(user, request.inviteCode(), ClientIp.resolve(httpRequest));
     }
 
     @Operation(summary = "List events I own or have joined")

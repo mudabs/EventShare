@@ -112,8 +112,9 @@ export async function uploadToR2(uploadUrl: string, file: File, contentType: str
 export const fetchMyEvents = (token: string) =>
   request<MyEventCard[]>(`/me/events`, { token });
 
+/** Signed-in join. Returns the membership; its id is needed to delete your own uploads. */
 export const joinEventAuthenticated = (token: string, inviteCode: string) =>
-  request<void>(`/me/events/join`, {
+  request<JoinResponse>(`/me/events/join`, {
     method: 'POST',
     token,
     body: JSON.stringify({ inviteCode })

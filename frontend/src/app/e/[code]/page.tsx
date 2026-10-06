@@ -1,14 +1,15 @@
 'use client';
 
-import { SignInButton, useUser } from '@clerk/nextjs';
+import { SignInButton, useAuth, useUser } from '@clerk/nextjs';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { AuthedEventJoin } from '@/components/AuthedEventJoin';
 import { Gallery } from '@/components/Gallery';
 import { Header } from '@/components/Header';
 import { JoinPrompt } from '@/components/JoinPrompt';
 import { UploadButton } from '@/components/UploadButton';
-import { getPublicEvent } from '@/lib/api';
+import { getPublicEvent, joinEventAuthenticated } from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { useGuestStore } from '@/store/guestStore';
 
@@ -17,6 +18,31 @@ export default function EventPage() {
   const code = params.code;
   const identity = useGuestStore((s) => s.identities[code]);
   const { isSignedIn } = useUser();
+  const { getToken } = useAuth();
+  const setIdentity = useGuestStore((s) => s.setIdentity);
+
+  // Signed-in users who joined before the join endpoint returned a membership have an
+  // identity without membershipId, so they could not delete their uploads. Re-joining is
+  // idempotent and returns the existing membership; store it once.
+  useEffect(() => {
+    if (!isSignedIn || !identity || identity.membershipId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const membership = await joinEventAuthenticated(token, code);
+        if (!cancelled && membership?.membershipId) {
+          setIdentity(code, { membershipId: membership.membershipId, displayName: identity.displayName });
+        }
+      } catch {
+        // Archived event or network error: keep browsing; delete just stays unavailable.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, identity, code, getToken, setIdentity]);
 
   const { data: event, isLoading, isError } = useQuery({
     queryKey: queryKeys.publicEvent(code),

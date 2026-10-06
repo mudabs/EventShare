@@ -114,3 +114,47 @@ Revert the change set; no data or schema is involved.
   "Download all" there too.
 - Very large ZIPs on Safari and Firefox are limited by memory; a server-side streaming
   endpoint could serve those browsers if needed.
+
+## Addendum (same day): uploader name label and delete for signed-in uploaders
+
+### G6: Signed-in uploaders could not delete their own photos
+
+Cause. Guests who join with a name get a `membershipId` back and store it. Guests who join
+while signed in go through `POST /api/me/events/join`, which returned nothing, so the web
+client stored an identity without `membershipId`. Their uploads were saved without an
+uploader membership, the gallery never marked them `ownedByRequester`, and the Delete
+button never appeared. Since C2 (membership id is the only delete credential) this meant
+signed-in uploaders could not delete at all.
+
+Fix.
+
+- `MembershipService.joinAsUser` now returns `JoinEventResponse` (idempotent; returns the
+  existing membership). For the event owner it returns the HOST membership, creating one
+  for old events that lack it. `MeController` returns it as JSON.
+- `AuthedEventJoin` stores `membershipId` from the response.
+- `app/e/[code]/page.tsx` backfills: a signed-in visitor whose stored identity has no
+  `membershipId` silently re-joins once and saves it.
+- The Delete button is still shown only when the API marks the photo `ownedByRequester`,
+  that is, only on the viewer's own uploads.
+
+Limitation. Photos uploaded by signed-in users before this fix carry no uploader
+membership, so they stay non-deletable by the uploader; the host can still remove them
+from the manage page. New uploads are linked correctly.
+
+### G7: Uploader name cut off on hover
+
+Cause. The name label was `absolute bottom-0 w-full` with no left offset, so its
+horizontal start fell after the image's inline box and the label was pushed off the right
+edge, where the rounded corner clipped it ("Priy"). Reproduced in headless Chromium.
+
+Fix. `MediaTile` pins the label with `inset-x-0`, left-aligns it with more padding and a
+taller gradient, and keeps `truncate` for very long names (the full name is in the viewer's
+details panel).
+
+Files: `event/MembershipService.java`, `me/MeController.java`,
+`frontend/src/components/AuthedEventJoin.tsx`, `frontend/src/lib/api.ts`,
+`frontend/src/app/e/[code]/page.tsx`, `frontend/src/components/MediaTile.tsx`,
+`docs/API.md`, this file.
+
+Verify. Sign in, join an event, upload a photo: Delete appears on that photo only, and
+works. Hover any tile: the uploader name sits bottom-left and is fully visible.

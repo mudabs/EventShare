@@ -22,13 +22,15 @@ export function AuthedEventJoin({ code, onJoined }: { code: string; onJoined: ()
       if (!token) {
         throw new Error('Your session expired. Please sign in again.');
       }
-      await joinEventAuthenticated(token, code);
+      const membership = await joinEventAuthenticated(token, code);
       const name =
+        membership?.displayName ??
         user?.fullName ??
         user?.firstName ??
         user?.primaryEmailAddress?.emailAddress ??
         'Guest';
-      setIdentity(code, { displayName: name });
+      // Keep the membership id: uploads are linked to it and it authorises deleting them.
+      setIdentity(code, { membershipId: membership?.membershipId, displayName: name });
       await queryClient.invalidateQueries({ queryKey: ['myEvents'] });
       onJoined();
     } catch (e) {

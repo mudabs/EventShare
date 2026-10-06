@@ -162,7 +162,8 @@ demo mode is off. See `docs/DEMO.md`.
 
 ## V2 endpoints
 
-My Events and membership: POST /api/me/events/join, GET /api/me/events,
+My Events and membership: POST /api/me/events/join (returns the membership:
+`{ membershipId, eventId, inviteCode, eventName, displayName }`), GET /api/me/events,
 DELETE /api/me/events/{eventId}/membership, GET /api/events/{eventId}/members (owner),
 DELETE /api/events/{eventId}/members/{membershipId} (owner), GET /api/me/profile.
 
